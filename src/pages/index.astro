@@ -85,32 +85,6 @@ const pinned = await getPinnedFolders();
 </Layout>
 
 <script>
-	document.querySelectorAll<HTMLButtonElement>(".pinned-unpin").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const section = btn.dataset.section!;
-			const folder = btn.dataset.folder!;
-			const label = btn.dataset.label || folder.split("/").pop() || folder;
-
-			if (!confirm(`Unpin "${label}"?`)) return;
-
-			const card = btn.closest(".group\\/pin") as HTMLElement | null;
-			if (card) card.style.opacity = "0.4";
-
-			fetch("/api/pin", {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ section, folderPath: folder }),
-			})
-				.then((res) => {
-					if (!res.ok) throw new Error("Unpin failed");
-					window.location.reload();
-				})
-				.catch(() => {
-					if (card) card.style.opacity = "1";
-				});
-		});
-	});
+	import { initPinnedUnpin } from "../lib/pin-toggle";
+	initPinnedUnpin();
 </script>

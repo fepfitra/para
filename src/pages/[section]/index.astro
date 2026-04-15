@@ -95,74 +95,7 @@ const pinnedPathsSet = getPinnedPaths(sectionMeta.prefix);
 </Layout>
 
 <script>
-	document.querySelectorAll<HTMLButtonElement>(".pin-toggle").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const section = btn.dataset.section!;
-			const folder = btn.dataset.folder!;
-			const isPinned = btn.dataset.pinned === "true";
-
-			if (isPinned) {
-				const label = folder.split("/").pop() || folder;
-				if (!confirm(`Unpin "${label}"?`)) return;
-			}
-
-			const method = isPinned ? "DELETE" : "POST";
-
-			const icon = btn.querySelector<SVGElement>(".pin-icon");
-			if (icon) {
-				icon.setAttribute("fill", isPinned ? "none" : "currentColor");
-			}
-			btn.dataset.pinned = isPinned ? "false" : "true";
-			btn.title = isPinned ? "Pin folder" : "Unpin folder";
-
-			fetch("/api/pin", {
-				method,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ section, folderPath: folder }),
-			})
-				.then((res) => {
-					if (!res.ok) throw new Error("Pin toggle failed");
-					window.location.reload();
-				})
-				.catch(() => {
-					if (icon) {
-						icon.setAttribute("fill", isPinned ? "currentColor" : "none");
-					}
-					btn.dataset.pinned = isPinned ? "true" : "false";
-					btn.title = isPinned ? "Unpin folder" : "Pin folder";
-				});
-		});
-	});
-
-	document.querySelectorAll<HTMLButtonElement>(".pinned-unpin").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const section = btn.dataset.section!;
-			const folder = btn.dataset.folder!;
-			const label = btn.dataset.label || folder.split("/").pop() || folder;
-
-			if (!confirm(`Unpin "${label}"?`)) return;
-
-			const card = btn.closest(".group\\/pin") as HTMLElement | null;
-			if (card) card.style.opacity = "0.4";
-
-			fetch("/api/pin", {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ section, folderPath: folder }),
-			})
-				.then((res) => {
-					if (!res.ok) throw new Error("Unpin failed");
-					window.location.reload();
-				})
-				.catch(() => {
-					if (card) card.style.opacity = "1";
-				});
-		});
-	});
+	import { initPinToggle, initPinnedUnpin } from "../../lib/pin-toggle";
+	initPinToggle();
+	initPinnedUnpin();
 </script>

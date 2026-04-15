@@ -107,6 +107,8 @@ const { nodes, currentPath, sectionLabel, sectionSlug, pinnedFolders = [], pinne
 </aside>
 
 <script>
+	import { initPinToggle, initPinnedUnpin } from "../lib/pin-toggle";
+
 	// Mobile sidebar toggle
 	const toggleButton = document.getElementById("sidebar-toggle");
 	const sidebarContent = document.getElementById("sidebar-content");
@@ -119,74 +121,6 @@ const { nodes, currentPath, sectionLabel, sectionSlug, pinnedFolders = [], pinne
 		});
 	}
 
-	// Helper: call pin API and reload
-	function callPinApi(method: string, section: string, folderPath: string) {
-		return fetch("/api/pin", {
-			method,
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ section, folderPath }),
-		}).then((res) => {
-			if (!res.ok) throw new Error("Pin toggle failed");
-			window.location.reload();
-		});
-	}
-
-	// Pin toggle buttons in the folder tree
-	document.querySelectorAll<HTMLButtonElement>(".pin-toggle").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const section = btn.dataset.section!;
-			const folder = btn.dataset.folder!;
-			const isPinned = btn.dataset.pinned === "true";
-
-			// Confirm before unpinning
-			if (isPinned) {
-				const label = folder.split("/").pop() || folder;
-				if (!confirm(`Unpin "${label}"?`)) return;
-			}
-
-			const method = isPinned ? "DELETE" : "POST";
-
-			// Optimistic UI: toggle icon fill immediately
-			const icon = btn.querySelector<SVGElement>(".pin-icon");
-			if (icon) {
-				icon.setAttribute("fill", isPinned ? "none" : "currentColor");
-			}
-			btn.dataset.pinned = isPinned ? "false" : "true";
-			btn.title = isPinned ? "Pin folder" : "Unpin folder";
-
-			callPinApi(method, section, folder).catch(() => {
-				// Revert on failure
-				if (icon) {
-					icon.setAttribute("fill", isPinned ? "currentColor" : "none");
-				}
-				btn.dataset.pinned = isPinned ? "true" : "false";
-				btn.title = isPinned ? "Unpin folder" : "Pin folder";
-			});
-		});
-	});
-
-	// Unpin buttons in the pinned section
-	document.querySelectorAll<HTMLButtonElement>(".pinned-unpin").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			const section = btn.dataset.section!;
-			const folder = btn.dataset.folder!;
-			const label = btn.dataset.label || folder.split("/").pop() || folder;
-
-			if (!confirm(`Unpin "${label}"?`)) return;
-
-			// Optimistic: fade out the item
-			const li = btn.closest("li");
-			if (li) li.style.opacity = "0.4";
-
-			callPinApi("DELETE", section, folder).catch(() => {
-				if (li) li.style.opacity = "1";
-			});
-		});
-	});
+	initPinToggle();
+	initPinnedUnpin();
 </script>
