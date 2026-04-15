@@ -1,6 +1,7 @@
 ---
 import Head from "../components/Head.astro";
 import Header from "../components/Header.astro";
+import SearchDialog from "../components/SearchDialog.astro";
 
 interface Props {
   title: string;
@@ -21,6 +22,7 @@ const { title, description, width = "sm" } = Astro.props;
       Skip to content
     </a>
     <Header containerSize={width} />
+    <SearchDialog />
 
     <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       <div class="absolute -top-20 -right-20 size-96 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/5"></div>

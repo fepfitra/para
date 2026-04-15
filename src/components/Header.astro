@@ -37,6 +37,29 @@ const pathname = Astro.url.pathname;
         </nav>
         <div class="flex items-center gap-1">
           <button
+            id="search-trigger"
+            aria-label="Search"
+            class="group flex items-center gap-1.5 rounded-sm border border-black/15 px-2 py-1 text-xs text-black/40 transition-colors hover:bg-black/5 hover:text-black/60 focus-visible:bg-black/5 dark:border-white/20 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/60 dark:focus-visible:bg-white/5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span class="hidden sm:inline">Search</span>
+            <kbd class="hidden rounded border border-black/15 px-1 py-0.5 text-[10px] leading-none dark:border-white/20 sm:inline">&#8984;K</kbd>
+          </button>
+          <button
             id="light-theme-button"
             aria-label="Light theme"
             class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
