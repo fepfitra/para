@@ -27,7 +27,7 @@ export interface S3Entry {
 
 // --- In-memory cache (TTL-based) ---
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const listCache = new Map<string, { data: S3Entry[]; ts: number }>();
+const listCache = new Map<string, { data: S3Entry[]; pins: Set<string>; ts: number }>();
 
 function slugify(key: string, prefix: string): string {
 	const rel = key.slice(prefix.length).replace(/\.md$/, "");
@@ -109,6 +109,7 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
 	}
 
 	const entries: S3Entry[] = [];
+	const pins = new Set<string>();
 	let continuationToken: string | null = null;
 
 	do {
@@ -137,13 +138,27 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
 		const parsed = parseListResponse(xml);
 
 		for (const obj of parsed.contents) {
-			if (!obj.key.endsWith(".md") || obj.key === prefix) continue;
+			const key = obj.key;
 
-			const rel = obj.key.slice(prefix.length).replace(/\.md$/, "");
+			// Track .pin files — the parent folder is "pinned"
+			if (key.endsWith(".pin")) {
+				// e.g. "2. Areas/english/.pin" → folder = "english"
+				const rel = key.slice(prefix.length);
+				const parts = rel.split("/").filter(Boolean);
+				if (parts.length >= 2) {
+					// Remove the ".pin" filename, keep the folder path
+					pins.add(parts.slice(0, -1).join("/"));
+				}
+				continue;
+			}
+
+			if (!key.endsWith(".md") || key === prefix) continue;
+
+			const rel = key.slice(prefix.length).replace(/\.md$/, "");
 			entries.push({
-				key: obj.key,
-				slug: slugify(obj.key, prefix),
-				title: titleFromFilename(obj.key),
+				key,
+				slug: slugify(key, prefix),
+				title: titleFromFilename(key),
 				size: obj.size,
 				segments: rel.split("/").filter(Boolean),
 			});
@@ -152,7 +167,7 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
 		continuationToken = parsed.isTruncated ? parsed.nextToken : null;
 	} while (continuationToken);
 
-	listCache.set(prefix, { data: entries, ts: Date.now() });
+	listCache.set(prefix, { data: entries, pins, ts: Date.now() });
 	return entries;
 }
 
@@ -174,6 +189,76 @@ export async function fetchMarkdown(key: string): Promise<string> {
 	}
 
 	return res.text();
+}
+
+export interface PinnedFolder {
+	/** Display name of the folder */
+	label: string;
+	/** The section this folder belongs to */
+	section: string;
+	sectionSlug: string;
+	/** Folder path relative to section (e.g. "english") */
+	folderPath: string;
+	/** Number of .md notes in this folder (recursive) */
+	noteCount: number;
+	/** Link to first note, or to the section listing */
+	href: string;
+}
+
+/**
+ * Get all pinned folders across all (or a specific) PARA section.
+ * A folder is "pinned" if it contains a `.pin` file.
+ */
+export async function getPinnedFolders(
+	sectionSlug?: string,
+): Promise<PinnedFolder[]> {
+	const sections = sectionSlug
+		? PARA_SECTIONS.filter((s) => s.slug === sectionSlug)
+		: PARA_SECTIONS;
+
+	const results: PinnedFolder[] = [];
+
+	for (const section of sections) {
+		// Ensure listing is cached
+		await listSection(section.prefix);
+		const cached = listCache.get(section.prefix);
+		if (!cached) continue;
+
+		for (const pinPath of cached.pins) {
+			// Count notes whose segments start with the pinned folder path
+			const pinParts = pinPath.split("/");
+			const notesInFolder = cached.data.filter((e) =>
+				pinParts.every((part, i) => e.segments[i] === part),
+			);
+
+			// Slugify the folder path for a link
+			const folderSlug = pinParts
+				.map((s) =>
+					s
+						.toLowerCase()
+						.replace(/[^a-z0-9]+/g, "-")
+						.replace(/^-|-$/g, ""),
+				)
+				.join("/");
+
+			// Link to first note in folder, or section listing
+			const firstNote = notesInFolder[0];
+			const href = firstNote
+				? `/${section.slug}/${firstNote.slug}`
+				: `/${section.slug}`;
+
+			results.push({
+				label: pinParts[pinParts.length - 1]!,
+				section: section.label,
+				sectionSlug: section.slug,
+				folderPath: pinPath,
+				noteCount: notesInFolder.length,
+				href,
+			});
+		}
+	}
+
+	return results;
 }
 
 /**

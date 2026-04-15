@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Container from "../components/Container.astro";
-import { PARA_SECTIONS, listSection } from "../lib/s3";
+import { PARA_SECTIONS, listSection, getPinnedFolders } from "../lib/s3";
 
 const counts = await Promise.all(
 	PARA_SECTIONS.map(async (s) => {
@@ -9,6 +9,8 @@ const counts = await Promise.all(
 		return { ...s, count: entries.length };
 	}),
 );
+
+const pinned = await getPinnedFolders();
 ---
 
 <Layout title="Home" description="Personal knowledge management system using the PARA method." width="xl">
@@ -22,6 +24,32 @@ const counts = await Promise.all(
 			</p>
 		</div>
 
+		{pinned.length > 0 && (
+			<div class="mt-10 animate" style="animation-delay: 100ms">
+				<h2 class="mb-3 text-sm font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+					Pinned
+				</h2>
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+					{pinned.map((p) => (
+						<a
+							href={p.href}
+							class="group flex items-start gap-3 rounded-sm border border-black/15 p-3 no-underline transition-colors duration-300 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5"
+						>
+							<span class="mt-0.5 text-base leading-none">📌</span>
+							<div class="min-w-0 flex-1">
+								<div class="font-medium text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30 truncate">
+									{p.label}
+								</div>
+								<div class="text-xs text-black/40 dark:text-white/40">
+									{p.section} · {p.noteCount} notes
+								</div>
+							</div>
+						</a>
+					))}
+				</div>
+			</div>
+		)}
+
 		<div class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
 			{counts.map((s, i) => (
 				<a
@@ -29,7 +57,7 @@ const counts = await Promise.all(
 					class:list={[
 						"animate group flex flex-col gap-1 rounded-sm border border-black/15 dark:border-white/20 p-4 no-underline transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5",
 					]}
-					style={`animation-delay: ${(i + 1) * 100}ms`}
+					style={`animation-delay: ${(i + 2) * 100}ms`}
 				>
 					<div class="font-semibold text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30">
 						{s.label}

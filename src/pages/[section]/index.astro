@@ -7,6 +7,7 @@ import {
 	PARA_SECTIONS,
 	listSection,
 	buildTree,
+	getPinnedFolders,
 } from "../../lib/s3";
 
 const { section } = Astro.params;
@@ -18,6 +19,7 @@ if (!sectionMeta) {
 
 const entries = await listSection(sectionMeta.prefix);
 const tree = buildTree(entries, sectionMeta.slug);
+const pinned = await getPinnedFolders(sectionMeta.slug);
 ---
 
 <Layout title={sectionMeta.label} description={`${sectionMeta.label} — ${entries.length} notes`} width="lg">
@@ -34,6 +36,32 @@ const tree = buildTree(entries, sectionMeta.slug);
 				{entries.length} notes
 			</p>
 		</div>
+
+		{pinned.length > 0 && (
+			<div class="mt-6 animate">
+				<h2 class="mb-2 text-xs font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+					Pinned
+				</h2>
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+					{pinned.map((p) => (
+						<a
+							href={p.href}
+							class="group flex items-start gap-3 rounded-sm border border-black/15 p-3 no-underline transition-colors duration-300 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5"
+						>
+							<span class="mt-0.5 text-base leading-none">📌</span>
+							<div class="min-w-0 flex-1">
+								<div class="font-medium text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30 truncate">
+									{p.label}
+								</div>
+								<div class="text-xs text-black/40 dark:text-white/40">
+									{p.noteCount} notes
+								</div>
+							</div>
+						</a>
+					))}
+				</div>
+			</div>
+		)}
 
 		<div class="mt-8 animate">
 			{entries.length === 0 ? (
