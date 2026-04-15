@@ -1,0 +1,121 @@
+---
+import type { Task } from "../lib/tasks";
+
+type Props = {
+	tasks: Task[];
+	/** Constrain to a fixed height with overflow scroll (for homepage). */
+	scrollable?: boolean;
+};
+
+const { tasks, scrollable } = Astro.props;
+
+const priorityColors: Record<string, string> = {
+	high: "text-red-600 dark:text-red-400",
+	normal: "text-yellow-600 dark:text-yellow-400",
+	low: "text-blue-600 dark:text-blue-400",
+	none: "text-black/40 dark:text-white/40",
+};
+
+const priorityLabels: Record<string, string> = {
+	high: "High",
+	normal: "Normal",
+	low: "Low",
+	none: "—",
+};
+
+const statusIcons: Record<string, string> = {
+	todo: "○",
+	"in-progress": "◐",
+	done: "●",
+};
+
+function formatDate(dateStr?: string): string {
+	if (!dateStr) return "";
+	const d = new Date(dateStr);
+	if (isNaN(d.getTime())) return dateStr;
+	return d.toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+	});
+}
+
+function isOverdue(due?: string): boolean {
+	if (!due) return false;
+	const d = new Date(due);
+	d.setHours(23, 59, 59, 999);
+	return d.getTime() < Date.now();
+}
+---
+
+{tasks.length > 0 && (
+	<div class="mt-10 animate" style="animation-delay: 150ms">
+		<div class="mb-3 flex items-center justify-between">
+			<h2 class="text-sm font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+				Active Tasks
+			</h2>
+			{scrollable && (
+				<a
+					href="/tasks"
+					class="text-xs no-underline text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors duration-300"
+				>
+					View all ({tasks.length})
+					<span aria-hidden="true">&rarr;</span>
+				</a>
+			)}
+		</div>
+		<div class:list={[
+			"flex flex-col gap-1.5",
+			scrollable && "max-h-80 overflow-y-auto pr-1",
+		]}>
+			{tasks.map((t) => (
+				<div class="flex items-center gap-2.5 rounded-sm border border-black/15 dark:border-white/20 px-3 py-2 transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5">
+					<span
+						class:list={[
+							"shrink-0 text-sm leading-none",
+							t.status === "in-progress"
+								? "text-yellow-600 dark:text-yellow-400"
+								: "text-black/30 dark:text-white/30",
+						]}
+						title={t.status}
+					>
+						{statusIcons[t.status] || "○"}
+					</span>
+					<div class="min-w-0 flex-1">
+						<div class="truncate text-sm font-medium text-black dark:text-white">
+							{t.title}
+						</div>
+						<div class="flex items-center gap-2 mt-0.5">
+							{t.priority !== "none" && (
+								<span
+									class:list={[
+										"text-xs font-medium",
+										priorityColors[t.priority],
+									]}
+								>
+									{priorityLabels[t.priority]}
+								</span>
+							)}
+							{t.due && (
+								<span
+									class:list={[
+										"text-xs tabular-nums",
+										isOverdue(t.due)
+											? "font-medium text-red-600 dark:text-red-400"
+											: "text-black/40 dark:text-white/40",
+									]}
+								>
+									{isOverdue(t.due) ? "Overdue" : `Due ${formatDate(t.due)}`}
+								</span>
+							)}
+							{!t.due && t.scheduled && (
+								<span class="text-xs tabular-nums text-black/40 dark:text-white/40">
+									{formatDate(t.scheduled)}
+								</span>
+							)}
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+	</div>
+)}

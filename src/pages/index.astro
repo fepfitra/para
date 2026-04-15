@@ -1,16 +1,20 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Container from "../components/Container.astro";
+import TaskList from "../components/TaskList.astro";
 import { PARA_SECTIONS, listSection, getPinnedFolders } from "../lib/s3";
+import { getActiveTasks } from "../lib/tasks";
 
-const counts = await Promise.all(
-	PARA_SECTIONS.map(async (s) => {
-		const entries = await listSection(s.prefix);
-		return { ...s, count: entries.length };
-	}),
-);
-
-const pinned = await getPinnedFolders();
+const [counts, pinned, activeTasks] = await Promise.all([
+	Promise.all(
+		PARA_SECTIONS.map(async (s) => {
+			const entries = await listSection(s.prefix);
+			return { ...s, count: entries.length };
+		}),
+	),
+	getPinnedFolders(),
+	getActiveTasks(),
+]);
 ---
 
 <Layout title="Home" description="Personal knowledge management system using the PARA method." width="xl">
@@ -62,6 +66,8 @@ const pinned = await getPinnedFolders();
 				</div>
 			</div>
 		)}
+
+		<TaskList tasks={activeTasks} scrollable />
 
 		<div class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
 			{counts.map((s, i) => (
