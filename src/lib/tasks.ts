@@ -16,6 +16,8 @@ const TASKS_PREFIX = "TaskNotes/Tasks/";
 export interface Task {
 	/** S3 key */
 	key: string;
+	/** URL slug derived from filename */
+	slug: string;
 	/** Display title (frontmatter title → first # heading → filename) */
 	title: string;
 	status: "todo" | "in-progress" | "done";
@@ -138,6 +140,19 @@ const PRIORITY_WEIGHTS: Record<string, number> = {
 	normal: 2,
 	high: 3,
 };
+
+/**
+ * Derive a URL-safe slug from an S3 key.
+ * e.g. "TaskNotes/Tasks/Gym_Tasks.md" → "gym-tasks"
+ */
+function slugFromKey(key: string): string {
+	const filename = key.split("/").pop()!;
+	return filename
+		.replace(/\.md$/, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-|-$/g, "");
+}
 
 function computeUrgency(
 	priority: string,
@@ -313,6 +328,7 @@ export async function getActiveTasks(): Promise<Task[]> {
 
 			const task: Task = {
 				key,
+				slug: slugFromKey(key),
 				title,
 				status: status as Task["status"],
 				priority: priority as Task["priority"],
@@ -341,4 +357,19 @@ export async function getActiveTasks(): Promise<Task[]> {
 
 	taskCache = { data: tasks, ts: Date.now() };
 	return tasks;
+}
+
+/**
+ * Find a task by its slug. Returns null if not found.
+ */
+export async function resolveTask(slug: string): Promise<Task | null> {
+	const tasks = await getActiveTasks();
+	return tasks.find((t) => t.slug === slug) ?? null;
+}
+
+/**
+ * Fetch the raw markdown content of a task file from S3.
+ */
+export async function fetchTaskContent(key: string): Promise<string> {
+	return fetchTaskFile(key);
 }

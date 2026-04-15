@@ -68,7 +68,10 @@ function isOverdue(due?: string): boolean {
 			scrollable && "max-h-80 overflow-y-auto pr-1",
 		]}>
 			{tasks.map((t) => (
-				<div class="flex items-center gap-2.5 rounded-sm border border-black/15 dark:border-white/20 px-3 py-2 transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5">
+				<a
+					href={`/tasks/${t.slug}`}
+					class="flex items-center gap-2.5 rounded-sm border border-black/15 dark:border-white/20 px-3 py-2 no-underline transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5"
+				>
 					<span
 						class:list={[
 							"shrink-0 text-sm leading-none",
@@ -114,7 +117,7 @@ function isOverdue(due?: string): boolean {
 							)}
 						</div>
 					</div>
-				</div>
+				</a>
 			))}
 		</div>
 	</div>

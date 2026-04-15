@@ -1,0 +1,106 @@
+---
+import DocLayout from "../../layouts/DocLayout.astro";
+import TaskSidebar from "../../components/TaskSidebar.astro";
+import TableOfContents from "../../components/TableOfContents.astro";
+import BackToPrevious from "../../components/BackToPrevious.astro";
+import { getActiveTasks, resolveTask, fetchTaskContent } from "../../lib/tasks";
+import { renderMarkdown, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
+
+const { slug } = Astro.params;
+const taskSlug = Array.isArray(slug) ? slug.join("/") : slug;
+
+const task = await resolveTask(taskSlug!);
+if (!task) {
+	return new Response("Not found", { status: 404 });
+}
+
+const tasks = await getActiveTasks();
+const raw = await fetchTaskContent(task.key);
+const body = stripFrontmatter(raw);
+const rawHtml = await renderMarkdown(raw);
+const { html: htmlContent, toc } = extractToc(rawHtml);
+const title = extractTitle(body) || task.title;
+
+const priorityLabel: Record<string, string> = {
+	high: "High",
+	normal: "Normal",
+	low: "Low",
+	none: "None",
+};
+const priorityColor: Record<string, string> = {
+	high: "text-red-600 dark:text-red-400",
+	normal: "text-yellow-600 dark:text-yellow-400",
+	low: "text-blue-600 dark:text-blue-400",
+	none: "text-black/40 dark:text-white/40",
+};
+---
+
+<DocLayout title={title} description={`${title} — Tasks`}>
+	<div class="flex flex-col gap-8 md:flex-row">
+		<!-- Left sidebar: task list -->
+		<div class="w-full md:w-64 md:shrink-0">
+			<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
+				<TaskSidebar tasks={tasks} currentSlug={taskSlug} />
+			</div>
+		</div>
+
+		<!-- Center: task content -->
+		<div class="min-w-0 flex-1">
+			<article class="prose dark:prose-invert max-w-none">
+				<div class="animate mb-10">
+					<BackToPrevious href="/tasks">
+						Back to Tasks
+					</BackToPrevious>
+				</div>
+
+				{toc.length > 0 && (
+					<div class="mb-8 lg:hidden">
+						<TableOfContents headings={toc} open={false} />
+					</div>
+				)}
+
+				<div class="animate">
+					<div class="mb-2 flex flex-wrap items-center gap-1 text-xs text-black/40 dark:text-white/40 not-prose">
+						<a href="/" class="no-underline hover:text-black dark:hover:text-white transition-colors">Home</a>
+						<span>/</span>
+						<a href="/tasks" class="no-underline hover:text-black dark:hover:text-white transition-colors">Tasks</a>
+					</div>
+					<h1 class="text-2xl font-semibold text-black dark:text-white">
+						{title}
+					</h1>
+					<div class="mt-2 flex flex-wrap items-center gap-3 text-xs not-prose">
+						<span class="text-black/40 dark:text-white/40">
+							{task.status === "in-progress" ? "In Progress" : "To Do"}
+						</span>
+						{task.priority !== "none" && (
+							<span class:list={[priorityColor[task.priority]]}>
+								{priorityLabel[task.priority]} priority
+							</span>
+						)}
+						{task.due && (
+							<span class="text-black/40 dark:text-white/40">
+								Due {task.due}
+							</span>
+						)}
+						{task.scheduled && (
+							<span class="text-black/40 dark:text-white/40">
+								Scheduled {task.scheduled}
+							</span>
+						)}
+					</div>
+				</div>
+
+				<div class="animate mt-8" set:html={htmlContent} />
+			</article>
+		</div>
+
+		<!-- Right sidebar: TOC -->
+		{toc.length > 0 && (
+			<aside class="hidden w-64 shrink-0 lg:block">
+				<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto">
+					<TableOfContents headings={toc} />
+				</div>
+			</aside>
+		)}
+	</div>
+</DocLayout>

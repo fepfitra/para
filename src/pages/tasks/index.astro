@@ -1,0 +1,34 @@
+---
+import DocLayout from "../../layouts/DocLayout.astro";
+import TaskSidebar from "../../components/TaskSidebar.astro";
+import BackToPrevious from "../../components/BackToPrevious.astro";
+import { getActiveTasks } from "../../lib/tasks";
+
+const tasks = await getActiveTasks();
+---
+
+<DocLayout title="Tasks" description="Active tasks from the second brain.">
+	<div class="flex flex-col gap-8 md:flex-row">
+		<!-- Left sidebar: task list -->
+		<div class="w-full md:w-64 md:shrink-0">
+			<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
+				<TaskSidebar tasks={tasks} />
+			</div>
+		</div>
+
+		<!-- Center: landing -->
+		<div class="min-w-0 flex-1">
+			<div class="animate mb-10">
+				<BackToPrevious href="/">Home</BackToPrevious>
+			</div>
+			<div class="animate">
+				<h1 class="text-2xl font-semibold text-black dark:text-white">
+					Tasks
+				</h1>
+				<p class="mt-2 text-black/60 dark:text-white/60">
+					{tasks.length} active tasks, sorted by urgency. Select a task from the sidebar to view its content.
+				</p>
+			</div>
+		</div>
+	</div>
+</DocLayout>

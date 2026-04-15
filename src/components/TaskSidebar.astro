@@ -1,0 +1,117 @@
+---
+import type { Task } from "../lib/tasks";
+
+interface Props {
+	tasks: Task[];
+	currentSlug?: string;
+}
+
+const { tasks, currentSlug } = Astro.props;
+
+const priorityDots: Record<string, string> = {
+	high: "bg-red-500",
+	normal: "bg-yellow-500",
+	low: "bg-blue-500",
+	none: "bg-black/20 dark:bg-white/20",
+};
+
+const statusIcons: Record<string, string> = {
+	todo: "○",
+	"in-progress": "◐",
+	done: "●",
+};
+---
+
+<aside class="w-full pr-4 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
+	<button
+		id="sidebar-toggle"
+		class="mb-4 flex items-center gap-2 text-lg font-semibold md:hidden"
+		aria-expanded="false"
+		aria-controls="sidebar-content"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<line x1="4" x2="20" y1="12" y2="12"></line>
+			<line x1="4" x2="20" y1="6" y2="6"></line>
+			<line x1="4" x2="20" y1="18" y2="18"></line>
+		</svg>
+		Tasks
+	</button>
+
+	<div id="sidebar-content" class="hidden md:block pb-8">
+		<div class="mb-4 text-lg font-semibold">
+			<a
+				href="/tasks"
+				class="hover:text-black dark:hover:text-white transition-colors no-underline text-black/70 dark:text-white/70"
+			>
+				Active Tasks
+			</a>
+			<span class="ml-1 text-xs font-normal text-black/30 dark:text-white/30">{tasks.length}</span>
+		</div>
+
+		<nav>
+			<ul class="space-y-0.5">
+				{tasks.map((t) => {
+					const isActive = t.slug === currentSlug;
+					return (
+						<li>
+							<a
+								href={`/tasks/${t.slug}`}
+								class:list={[
+									"flex items-center gap-2 rounded-md px-3 py-1.5 text-sm no-underline transition-colors min-w-0",
+									isActive
+										? "bg-black/5 dark:bg-white/10 text-black dark:text-white font-medium"
+										: "text-black/60 dark:text-white/60 hover:bg-black/5 hover:text-black dark:hover:bg-white/5 dark:hover:text-white",
+								]}
+							>
+								<span
+									class:list={[
+										"shrink-0 text-xs leading-none",
+										t.status === "in-progress"
+											? "text-yellow-600 dark:text-yellow-400"
+											: isActive
+												? "text-black/40 dark:text-white/40"
+												: "text-black/25 dark:text-white/25",
+									]}
+								>
+									{statusIcons[t.status] || "○"}
+								</span>
+								<span class="truncate">{t.title}</span>
+								{t.priority !== "none" && (
+									<span
+										class:list={[
+											"ml-auto shrink-0 size-1.5 rounded-full",
+											priorityDots[t.priority],
+										]}
+									/>
+								)}
+							</a>
+						</li>
+					);
+				})}
+			</ul>
+		</nav>
+	</div>
+</aside>
+
+<script>
+	const toggleButton = document.getElementById("sidebar-toggle");
+	const sidebarContent = document.getElementById("sidebar-content");
+
+	if (toggleButton && sidebarContent) {
+		toggleButton.addEventListener("click", () => {
+			const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+			toggleButton.setAttribute("aria-expanded", (!isExpanded).toString());
+			sidebarContent.classList.toggle("hidden");
+		});
+	}
+</script>
