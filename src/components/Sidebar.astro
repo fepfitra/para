@@ -12,7 +12,7 @@ interface Props {
 const { nodes, currentPath, sectionLabel, sectionSlug } = Astro.props;
 ---
 
-<aside class="w-full pr-4 md:w-64 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
+<aside class="w-full pr-4 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
 	<button
 		id="sidebar-toggle"
 		class="mb-4 flex items-center gap-2 text-lg font-semibold md:hidden"
@@ -37,7 +37,7 @@ const { nodes, currentPath, sectionLabel, sectionSlug } = Astro.props;
 		Menu
 	</button>
 
-	<div id="sidebar-content" class="hidden md:block pb-24">
+	<div id="sidebar-content" class="hidden md:block pb-8">
 		<div class="mb-4 text-lg font-semibold">
 			<a
 				href={`/${sectionSlug}`}
