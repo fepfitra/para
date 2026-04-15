@@ -135,3 +135,10 @@
 .copy-code:active {
   @apply scale-90 transition-transform;
 }
+
+/* Active TOC link highlight */
+.toc-link.toc-active {
+  @apply text-black dark:text-white;
+  @apply decoration-black/50 dark:decoration-white/50;
+  @apply font-medium;
+}

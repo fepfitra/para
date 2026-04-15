@@ -29,3 +29,105 @@ const { headings, open = true } = Astro.props;
 		</nav>
 	</details>
 )}
+
+<script>
+	const ACTIVE_CLASS = "toc-active";
+
+	function initTocObserver() {
+		const tocLinks = document.querySelectorAll<HTMLAnchorElement>("a[data-toc-link]");
+		if (!tocLinks.length) return;
+
+		// Build a map of heading id -> toc link(s)
+		const linkMap = new Map<string, HTMLAnchorElement[]>();
+		tocLinks.forEach((link) => {
+			const id = link.dataset.tocLink!;
+			const arr = linkMap.get(id) ?? [];
+			arr.push(link);
+			linkMap.set(id, arr);
+		});
+
+		// Collect all heading elements that have a matching toc link
+		const headings = Array.from(linkMap.keys())
+			.map((id) => document.getElementById(id))
+			.filter((el): el is HTMLElement => el !== null);
+
+		if (!headings.length) return;
+
+		let activeId: string | null = null;
+
+		function setActive(id: string | null) {
+			if (id === activeId) return;
+
+			// Remove from previous
+			if (activeId) {
+				linkMap.get(activeId)?.forEach((link) => {
+					link.classList.remove(ACTIVE_CLASS);
+				});
+			}
+
+			// Add to new
+			if (id) {
+				linkMap.get(id)?.forEach((link) => {
+					link.classList.add(ACTIVE_CLASS);
+				});
+			}
+
+			activeId = id;
+		}
+
+		// Use IntersectionObserver with a rootMargin that triggers
+		// when a heading is near the top of the viewport
+		const observer = new IntersectionObserver(
+			(entries) => {
+				// Find the topmost visible heading
+				const visible = entries
+					.filter((e) => e.isIntersecting)
+					.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+				if (visible.length > 0) {
+					setActive(visible[0]!.target.id);
+				}
+			},
+			{
+				// Top 20% of viewport triggers intersection
+				rootMargin: "0px 0px -80% 0px",
+				threshold: 0,
+			},
+		);
+
+		headings.forEach((h) => observer.observe(h));
+
+		// Also handle scroll for edge case: set the last heading that's
+		// above the viewport top when no headings are intersecting
+		let ticking = false;
+		window.addEventListener("scroll", () => {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(() => {
+				ticking = false;
+				let current: string | null = null;
+				for (const h of headings) {
+					if (h.getBoundingClientRect().top <= 120) {
+						current = h.id;
+					} else {
+						break;
+					}
+				}
+				if (current) setActive(current);
+			});
+		}, { passive: true });
+
+		// Set initial active on load
+		let initial: string | null = null;
+		for (const h of headings) {
+			if (h.getBoundingClientRect().top <= 120) {
+				initial = h.id;
+			} else {
+				break;
+			}
+		}
+		if (initial) setActive(initial);
+	}
+
+	initTocObserver();
+</script>
