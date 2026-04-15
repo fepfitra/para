@@ -1,0 +1,73 @@
+---
+import SidebarItem from "./SidebarItem.astro";
+import type { SidebarNode } from "../lib/s3";
+
+interface Props {
+	nodes: SidebarNode[];
+	currentPath?: string;
+	sectionLabel: string;
+	sectionSlug: string;
+}
+
+const { nodes, currentPath, sectionLabel, sectionSlug } = Astro.props;
+---
+
+<aside class="w-full pr-4 md:w-64 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
+	<button
+		id="sidebar-toggle"
+		class="mb-4 flex items-center gap-2 text-lg font-semibold md:hidden"
+		aria-expanded="false"
+		aria-controls="sidebar-content"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<line x1="4" x2="20" y1="12" y2="12"></line>
+			<line x1="4" x2="20" y1="6" y2="6"></line>
+			<line x1="4" x2="20" y1="18" y2="18"></line>
+		</svg>
+		Menu
+	</button>
+
+	<div id="sidebar-content" class="hidden md:block pb-24">
+		<div class="mb-4 text-lg font-semibold">
+			<a
+				href={`/${sectionSlug}`}
+				class:list={[
+					"hover:text-black dark:hover:text-white transition-colors no-underline",
+					"text-black/70 dark:text-white/70",
+				]}
+			>
+				{sectionLabel}
+			</a>
+		</div>
+		<nav class="space-y-1">
+			<ul class="space-y-1">
+				{nodes.map((node) => (
+					<SidebarItem node={node} currentPath={currentPath} depth={0} />
+				))}
+			</ul>
+		</nav>
+	</div>
+</aside>
+
+<script>
+	const toggleButton = document.getElementById("sidebar-toggle");
+	const sidebarContent = document.getElementById("sidebar-content");
+
+	if (toggleButton && sidebarContent) {
+		toggleButton.addEventListener("click", () => {
+			const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+			toggleButton.setAttribute("aria-expanded", (!isExpanded).toString());
+			sidebarContent.classList.toggle("hidden");
+		});
+	}
+</script>

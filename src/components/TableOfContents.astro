@@ -1,0 +1,31 @@
+---
+import TableOfContentsHeading from "./TableOfContentsHeading.astro";
+import type { TocEntry } from "../lib/markdown";
+
+interface Props {
+	headings: TocEntry[];
+	open?: boolean;
+}
+
+const { headings, open = true } = Astro.props;
+---
+
+{headings.length > 0 && (
+	<details
+		open={open}
+		class="animate group not-prose rounded-lg border border-black/15 dark:border-white/20"
+	>
+		<summary
+			class="cursor-pointer rounded-t-lg px-3 py-1.5 font-medium transition-colors group-open:bg-black/5 hover:bg-black/5 dark:group-open:bg-white/5 hover:dark:bg-white/5"
+		>
+			Table of Contents
+		</summary>
+		<nav>
+			<ul class="my-0 py-3">
+				{headings.map((heading) => (
+					<TableOfContentsHeading heading={heading} />
+				))}
+			</ul>
+		</nav>
+	</details>
+)}

@@ -1,0 +1,36 @@
+---
+import Head from "../components/Head.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+  width?: "sm" | "md" | "lg" | "xl" | "2xl";
+}
+
+const { title, description, width = "sm" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <Head title={title} description={description} />
+  </head>
+  <body>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-sm focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black focus:shadow-lg dark:focus:bg-neutral-800 dark:focus:text-white">
+      Skip to content
+    </a>
+    <Header containerSize={width} />
+
+    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <div class="absolute -top-20 -right-20 size-96 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/5"></div>
+      <div class="absolute top-40 -left-20 size-72 rounded-full bg-purple-500/10 blur-3xl dark:bg-purple-500/5"></div>
+    </div>
+
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer containerSize={width} />
+  </body>
+</html>

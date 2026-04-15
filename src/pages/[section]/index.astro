@@ -1,0 +1,52 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Container from "../../components/Container.astro";
+import BackToPrevious from "../../components/BackToPrevious.astro";
+import SidebarItem from "../../components/SidebarItem.astro";
+import {
+	PARA_SECTIONS,
+	listSection,
+	buildTree,
+} from "../../lib/s3";
+
+const { section } = Astro.params;
+const sectionMeta = PARA_SECTIONS.find((s) => s.slug === section);
+
+if (!sectionMeta) {
+	return Astro.redirect("/");
+}
+
+const entries = await listSection(sectionMeta.prefix);
+const tree = buildTree(entries, sectionMeta.slug);
+---
+
+<Layout title={sectionMeta.label} description={`${sectionMeta.label} — ${entries.length} notes`} width="lg">
+	<Container size="lg">
+		<div class="animate mb-10">
+			<BackToPrevious href="/">Back to home</BackToPrevious>
+		</div>
+
+		<div class="animate">
+			<h1 class="text-2xl font-semibold text-black dark:text-white">
+				{sectionMeta.label}
+			</h1>
+			<p class="mt-1 text-sm text-black/50 dark:text-white/50">
+				{entries.length} notes
+			</p>
+		</div>
+
+		<div class="mt-8 animate">
+			{entries.length === 0 ? (
+				<p class="text-black/50 dark:text-white/50">No notes in this section yet.</p>
+			) : (
+				<nav class="space-y-1">
+					<ul class="space-y-1">
+						{tree.map((node) => (
+							<SidebarItem node={node} depth={0} />
+						))}
+					</ul>
+				</nav>
+			)}
+		</div>
+	</Container>
+</Layout>

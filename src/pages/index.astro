@@ -1,0 +1,44 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Container from "../components/Container.astro";
+import { PARA_SECTIONS, listSection } from "../lib/s3";
+
+const counts = await Promise.all(
+	PARA_SECTIONS.map(async (s) => {
+		const entries = await listSection(s.prefix);
+		return { ...s, count: entries.length };
+	}),
+);
+---
+
+<Layout title="Home" description="Personal knowledge management system using the PARA method." width="xl">
+	<Container size="xl">
+		<div class="animate">
+			<h1 class="text-2xl font-semibold text-black dark:text-white">
+				PARA
+			</h1>
+			<p class="mt-2 text-black/60 dark:text-white/60">
+				Second Brain — organized using the PARA method.
+			</p>
+		</div>
+
+		<div class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
+			{counts.map((s, i) => (
+				<a
+					href={`/${s.slug}`}
+					class:list={[
+						"animate group flex flex-col gap-1 rounded-sm border border-black/15 dark:border-white/20 p-4 no-underline transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5",
+					]}
+					style={`animation-delay: ${(i + 1) * 100}ms`}
+				>
+					<div class="font-semibold text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30">
+						{s.label}
+					</div>
+					<div class="text-sm text-black/50 dark:text-white/50">
+						{s.count} notes
+					</div>
+				</a>
+			))}
+		</div>
+	</Container>
+</Layout>

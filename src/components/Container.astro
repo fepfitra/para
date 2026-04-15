@@ -1,0 +1,17 @@
+---
+type Props = {
+    size?: "sm" | "md" | "lg" | "xl" | "2xl";
+};
+
+const { size = "sm" } = Astro.props;
+
+const maxW = {
+    sm: "max-w-(--breakpoint-sm)",
+    md: "max-w-(--breakpoint-md)",
+    lg: "max-w-(--breakpoint-lg)",
+    xl: "max-w-(--breakpoint-xl)",
+    "2xl": "max-w-(--breakpoint-2xl)",
+};
+---
+
+<div class={`mx-auto ${maxW[size]} px-3`}><slot /></div>

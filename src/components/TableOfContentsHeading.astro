@@ -1,0 +1,25 @@
+---
+import type { TocEntry } from "../lib/markdown";
+
+interface Props {
+	heading: TocEntry;
+}
+
+const { heading } = Astro.props;
+---
+
+<li class="ml-6 list-outside list-disc py-1.5 pr-6 text-sm">
+	<a
+		href={`#${heading.id}`}
+		class="text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 transition-colors duration-300 ease-in-out hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50"
+	>
+		{heading.text}
+	</a>
+	{heading.subheadings.length > 0 && (
+		<ul class="translate-x-3">
+			{heading.subheadings.map((sub) => (
+				<Astro.self heading={sub} />
+			))}
+		</ul>
+	)}
+</li>
