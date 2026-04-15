@@ -1,18 +1,13 @@
-import {
-	S3Client,
-	ListObjectsV2Command,
-	GetObjectCommand,
-} from "@aws-sdk/client-s3";
+import { AwsClient } from "aws4fetch";
 
-const client = new S3Client({
+const s3 = new AwsClient({
+	accessKeyId: import.meta.env.S3_ACCESS_KEY,
+	secretAccessKey: import.meta.env.S3_SECRET_KEY,
 	region: import.meta.env.S3_REGION || "eu-central-1",
-	endpoint: import.meta.env.S3_ENDPOINT || "https://s3.g.s4.mega.io",
-	credentials: {
-		accessKeyId: import.meta.env.S3_ACCESS_KEY,
-		secretAccessKey: import.meta.env.S3_SECRET_KEY,
-	},
+	service: "s3",
 });
 
+const ENDPOINT = import.meta.env.S3_ENDPOINT || "https://s3.g.s4.mega.io";
 const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
 
 export const PARA_SECTIONS = [
@@ -57,6 +52,53 @@ function titleFromFilename(key: string): string {
 }
 
 /**
+ * Parse XML response from S3 ListObjectsV2.
+ * We do lightweight XML parsing since we can't use DOMParser in Workers
+ * and don't want heavy dependencies.
+ */
+function parseListResponse(xml: string): {
+	contents: { key: string; size: number }[];
+	nextToken: string | null;
+	isTruncated: boolean;
+} {
+	const contents: { key: string; size: number }[] = [];
+
+	// Extract all <Contents> blocks
+	const contentsRegex = /<Contents>([\s\S]*?)<\/Contents>/g;
+	let match;
+	while ((match = contentsRegex.exec(xml)) !== null) {
+		const block = match[1]!;
+		const keyMatch = block.match(/<Key>(.*?)<\/Key>/);
+		const sizeMatch = block.match(/<Size>(.*?)<\/Size>/);
+		if (keyMatch) {
+			contents.push({
+				key: decodeXmlEntities(keyMatch[1]!),
+				size: sizeMatch ? parseInt(sizeMatch[1]!, 10) : 0,
+			});
+		}
+	}
+
+	const truncMatch = xml.match(/<IsTruncated>(.*?)<\/IsTruncated>/);
+	const isTruncated = truncMatch ? truncMatch[1] === "true" : false;
+
+	const tokenMatch = xml.match(
+		/<NextContinuationToken>(.*?)<\/NextContinuationToken>/,
+	);
+	const nextToken = tokenMatch ? decodeXmlEntities(tokenMatch[1]!) : null;
+
+	return { contents, nextToken, isTruncated };
+}
+
+function decodeXmlEntities(str: string): string {
+	return str
+		.replace(/&amp;/g, "&")
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&quot;/g, '"')
+		.replace(/&apos;/g, "'");
+}
+
+/**
  * List all .md entries under a PARA section prefix.
  * Results are cached in memory for 5 minutes.
  */
@@ -67,33 +109,48 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
 	}
 
 	const entries: S3Entry[] = [];
-	let token: string | undefined;
+	let continuationToken: string | null = null;
 
 	do {
-		const res = await client.send(
-			new ListObjectsV2Command({
-				Bucket: BUCKET,
-				Prefix: prefix,
-				ContinuationToken: token,
-			}),
-		);
+		// Build query string manually — URLSearchParams encodes spaces as '+'
+		// but AWS Signature V4 requires '%20' encoding for signature to match.
+		const paramParts = [
+			`list-type=2`,
+			`prefix=${encodeURIComponent(prefix)}`,
+		];
+		if (continuationToken) {
+			paramParts.push(
+				`continuation-token=${encodeURIComponent(continuationToken)}`,
+			);
+		}
 
-		for (const obj of res.Contents ?? []) {
-			const key = obj.Key!;
-			if (!key.endsWith(".md") || key === prefix) continue;
+		const url = `${ENDPOINT}/${BUCKET}?${paramParts.join("&")}`;
+		const res = await s3.fetch(url);
 
-			const rel = key.slice(prefix.length).replace(/\.md$/, "");
+		if (!res.ok) {
+			throw new Error(
+				`S3 ListObjectsV2 failed: ${res.status} ${await res.text()}`,
+			);
+		}
+
+		const xml = await res.text();
+		const parsed = parseListResponse(xml);
+
+		for (const obj of parsed.contents) {
+			if (!obj.key.endsWith(".md") || obj.key === prefix) continue;
+
+			const rel = obj.key.slice(prefix.length).replace(/\.md$/, "");
 			entries.push({
-				key,
-				slug: slugify(key, prefix),
-				title: titleFromFilename(key),
-				size: obj.Size ?? 0,
+				key: obj.key,
+				slug: slugify(obj.key, prefix),
+				title: titleFromFilename(obj.key),
+				size: obj.size,
 				segments: rel.split("/").filter(Boolean),
 			});
 		}
 
-		token = res.NextContinuationToken;
-	} while (token);
+		continuationToken = parsed.isTruncated ? parsed.nextToken : null;
+	} while (continuationToken);
 
 	listCache.set(prefix, { data: entries, ts: Date.now() });
 	return entries;
@@ -103,10 +160,20 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
  * Fetch a single markdown file's content from S3.
  */
 export async function fetchMarkdown(key: string): Promise<string> {
-	const res = await client.send(
-		new GetObjectCommand({ Bucket: BUCKET, Key: key }),
-	);
-	return res.Body!.transformToString();
+	const encodedKey = key
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
+	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
+	const res = await s3.fetch(url);
+
+	if (!res.ok) {
+		throw new Error(
+			`S3 GetObject failed for ${key}: ${res.status} ${await res.text()}`,
+		);
+	}
+
+	return res.text();
 }
 
 /**
@@ -133,7 +200,10 @@ export interface SidebarNode {
 	children: SidebarNode[];
 }
 
-export function buildTree(entries: S3Entry[], sectionSlug: string): SidebarNode[] {
+export function buildTree(
+	entries: S3Entry[],
+	sectionSlug: string,
+): SidebarNode[] {
 	const root: SidebarNode[] = [];
 
 	for (const entry of entries) {
@@ -151,9 +221,7 @@ export function buildTree(entries: S3Entry[], sectionSlug: string): SidebarNode[
 					children: [],
 				});
 			} else {
-				let folder = current.find(
-					(n) => !n.slug && n.label === part,
-				);
+				let folder = current.find((n) => !n.slug && n.label === part);
 				if (!folder) {
 					folder = { label: part, children: [] };
 					current.push(folder);
