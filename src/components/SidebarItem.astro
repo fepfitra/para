@@ -24,7 +24,7 @@ const isAncestor = !node.slug && containsPath(node, currentPath);
 <li>
 	{hasChildren && !node.slug ? (
 		<details
-			open={isAncestor || depth === 0}
+			open={isAncestor}
 			class="group"
 		>
 			<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
