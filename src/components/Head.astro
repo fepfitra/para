@@ -33,9 +33,6 @@ const { title, description = "PARA Second Brain" } = Astro.props;
     updateThemeButtons();
     addCopyCodeButtons();
 
-    const backToTop = document.getElementById("back-to-top");
-    backToTop?.addEventListener("click", (event) => scrollToTop(event));
-
     const lightThemeButton = document.getElementById("light-theme-button");
     lightThemeButton?.addEventListener("click", () => {
       localStorage.setItem("theme", "light");
@@ -105,11 +102,6 @@ const { title, description = "PARA Second Brain" } = Astro.props;
     } else {
       document.documentElement.classList.remove("scrolled");
     }
-  }
-
-  function scrollToTop(event) {
-    event.preventDefault();
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function toggleTheme(dark) {

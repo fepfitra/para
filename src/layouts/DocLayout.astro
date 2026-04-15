@@ -1,7 +1,6 @@
 ---
 import Head from "../components/Head.astro";
 import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
 
 interface Props {
   title: string;
@@ -25,6 +24,5 @@ const { title, description, width = "2xl" } = Astro.props;
     <main id="main-content" class="container mx-auto px-4 py-32">
       <slot />
     </main>
-    <Footer containerSize={width} />
   </body>
 </html>

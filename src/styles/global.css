@@ -56,10 +56,6 @@
     @apply flex-1 py-32;
   }
 
-  footer {
-    @apply py-6 text-sm;
-  }
-
   article {
     @apply prose prose-neutral dark:prose-invert prose-img:mx-auto prose-img:my-auto;
     @apply prose-headings:font-semibold;
@@ -87,14 +83,6 @@
 
 .animate.show {
   @apply translate-y-0 opacity-100;
-}
-
-html #back-to-top {
-  @apply pointer-events-none opacity-0;
-}
-
-html.scrolled #back-to-top {
-  @apply pointer-events-auto opacity-100;
 }
 
 .prose pre {
