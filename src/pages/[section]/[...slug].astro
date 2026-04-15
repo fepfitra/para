@@ -9,6 +9,7 @@ import {
 	buildTree,
 	fetchMarkdown,
 	getPinnedFolders,
+	getPinnedPaths,
 } from "../../lib/s3";
 import { renderMarkdown, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
 
@@ -34,6 +35,7 @@ const { html: htmlContent, toc } = extractToc(rawHtml);
 const title = extractTitle(body) || entry.title;
 const tree = buildTree(entries, sectionMeta.slug);
 const pinned = await getPinnedFolders(sectionMeta.slug);
+const pinnedPathsSet = getPinnedPaths(sectionMeta.prefix);
 
 // Current page path for highlighting in sidebar
 const currentPath = `/${sectionMeta.slug}/${entry.slug}`;
@@ -53,6 +55,7 @@ const crumbs = entry.segments.slice(0, -1);
 					sectionLabel={sectionMeta.label}
 					sectionSlug={sectionMeta.slug}
 					pinnedFolders={pinned}
+					pinnedPaths={pinnedPathsSet}
 				/>
 			</div>
 		</div>

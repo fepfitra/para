@@ -191,6 +191,78 @@ export async function fetchMarkdown(key: string): Promise<string> {
 	return res.text();
 }
 
+/**
+ * Create a .pin file in S3 to mark a folder as pinned.
+ * @param sectionPrefix e.g. "2. Areas/"
+ * @param folderPath relative folder path e.g. "english" or "sub/folder"
+ */
+export async function putPin(
+	sectionPrefix: string,
+	folderPath: string,
+): Promise<void> {
+	const key = `${sectionPrefix}${folderPath}/.pin`;
+	const encodedKey = key
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
+	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
+	const res = await s3.fetch(url, {
+		method: "PUT",
+		body: "",
+	});
+
+	if (!res.ok) {
+		throw new Error(
+			`S3 PutObject failed for ${key}: ${res.status} ${await res.text()}`,
+		);
+	}
+
+	// Invalidate cache so next listing picks up the new pin
+	invalidateCache(sectionPrefix);
+}
+
+/**
+ * Delete a .pin file from S3 to unpin a folder.
+ */
+export async function deletePin(
+	sectionPrefix: string,
+	folderPath: string,
+): Promise<void> {
+	const key = `${sectionPrefix}${folderPath}/.pin`;
+	const encodedKey = key
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
+	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
+	const res = await s3.fetch(url, {
+		method: "DELETE",
+	});
+
+	if (!res.ok && res.status !== 404) {
+		throw new Error(
+			`S3 DeleteObject failed for ${key}: ${res.status} ${await res.text()}`,
+		);
+	}
+
+	invalidateCache(sectionPrefix);
+}
+
+/**
+ * Invalidate the listing cache for a section so pin changes are reflected.
+ */
+export function invalidateCache(prefix: string): void {
+	listCache.delete(prefix);
+}
+
+/**
+ * Get the set of pinned folder paths for a section (from cache).
+ * Call listSection() first to ensure cache is populated.
+ */
+export function getPinnedPaths(prefix: string): Set<string> {
+	const cached = listCache.get(prefix);
+	return cached?.pins ?? new Set();
+}
+
 export interface PinnedFolder {
 	/** Display name of the folder */
 	label: string;

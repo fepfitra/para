@@ -31,20 +31,33 @@ const pinned = await getPinnedFolders();
 				</h2>
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{pinned.map((p) => (
-						<a
-							href={p.href}
-							class="group flex items-start gap-3 rounded-sm border border-black/15 p-3 no-underline transition-colors duration-300 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5"
-						>
-							<span class="mt-0.5 text-base leading-none">📌</span>
-							<div class="min-w-0 flex-1">
-								<div class="font-medium text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30 truncate">
-									{p.label}
+						<div class="group/pin relative flex items-start gap-3 rounded-sm border border-black/15 p-3 transition-colors duration-300 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5">
+							<a
+								href={p.href}
+								class="flex flex-1 items-start gap-3 no-underline min-w-0"
+							>
+								<span class="mt-0.5 text-base leading-none">📌</span>
+								<div class="min-w-0 flex-1">
+									<div class="font-medium text-black dark:text-white group-hover/pin:underline underline-offset-4 decoration-black/30 dark:decoration-white/30 truncate">
+										{p.label}
+									</div>
+									<div class="text-xs text-black/40 dark:text-white/40">
+										{p.section} · {p.noteCount} notes
+									</div>
 								</div>
-								<div class="text-xs text-black/40 dark:text-white/40">
-									{p.section} · {p.noteCount} notes
-								</div>
-							</div>
-						</a>
+							</a>
+							<button
+								class="pinned-unpin shrink-0 p-1 rounded opacity-0 group-hover/pin:opacity-100 text-black/20 hover:text-black/50 dark:text-white/20 dark:hover:text-white/50 transition-all"
+								data-section={p.sectionSlug}
+								data-folder={p.folderPath}
+								data-label={p.label}
+								title="Unpin folder"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M18 6 6 18" /><path d="m6 6 12 12" />
+								</svg>
+							</button>
+						</div>
 					))}
 				</div>
 			</div>
@@ -70,3 +83,34 @@ const pinned = await getPinnedFolders();
 		</div>
 	</Container>
 </Layout>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>(".pinned-unpin").forEach((btn) => {
+		btn.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+
+			const section = btn.dataset.section!;
+			const folder = btn.dataset.folder!;
+			const label = btn.dataset.label || folder.split("/").pop() || folder;
+
+			if (!confirm(`Unpin "${label}"?`)) return;
+
+			const card = btn.closest(".group\\/pin") as HTMLElement | null;
+			if (card) card.style.opacity = "0.4";
+
+			fetch("/api/pin", {
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ section, folderPath: folder }),
+			})
+				.then((res) => {
+					if (!res.ok) throw new Error("Unpin failed");
+					window.location.reload();
+				})
+				.catch(() => {
+					if (card) card.style.opacity = "1";
+				});
+		});
+	});
+</script>
