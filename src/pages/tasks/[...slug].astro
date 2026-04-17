@@ -4,7 +4,7 @@ import TaskSidebar from "../../components/TaskSidebar.astro";
 import TableOfContents from "../../components/TableOfContents.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import { getActiveTasks, resolveTask, fetchTaskContent } from "../../lib/tasks";
-import { renderMarkdown, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
+import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
 
 const { slug } = Astro.params;
 const taskSlug = Array.isArray(slug) ? slug.join("/") : slug;
@@ -17,7 +17,7 @@ if (!task) {
 const tasks = await getActiveTasks();
 const raw = await fetchTaskContent(task.key);
 const body = stripFrontmatter(raw);
-const rawHtml = await renderMarkdown(raw);
+const rawHtml = await renderMarkdownWithContext(raw, task.key);
 const { html: htmlContent, toc } = extractToc(rawHtml);
 const title = extractTitle(body) || task.title;
 

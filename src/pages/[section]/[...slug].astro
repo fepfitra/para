@@ -11,7 +11,7 @@ import {
 	getPinnedFolders,
 	getPinnedPaths,
 } from "../../lib/s3";
-import { renderMarkdown, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
+import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
 
 const { section, slug } = Astro.params;
 const pageSlug = Array.isArray(slug) ? slug.join("/") : slug;
@@ -30,7 +30,7 @@ if (!entry) {
 
 const raw = await fetchMarkdown(entry.key);
 const body = stripFrontmatter(raw);
-const rawHtml = await renderMarkdown(raw);
+const rawHtml = await renderMarkdownWithContext(raw, entry.key);
 const { html: htmlContent, toc } = extractToc(rawHtml);
 const title = extractTitle(body) || entry.title;
 const tree = buildTree(entries, sectionMeta.slug);
