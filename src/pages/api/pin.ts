@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { PARA_SECTIONS, putPin, deletePin } from "../../lib/s3";
+import { SECTIONS, putPin, deletePin } from "../../lib/s3";
 
 /**
  * POST /api/pin — create a .pin file to pin a folder
@@ -12,10 +12,19 @@ export const POST: APIRoute = async ({ request }) => {
 	try {
 		const { section, folderPath } = await request.json();
 
-		const sectionMeta = PARA_SECTIONS.find((s) => s.slug === section);
-		if (!sectionMeta || !folderPath) {
+		if (!folderPath) {
 			return new Response(
-				JSON.stringify({ error: "Invalid section or folderPath" }),
+				JSON.stringify({ error: "Missing folderPath" }),
+				{ status: 400, headers: { "Content-Type": "application/json" } },
+			);
+		}
+
+		const sectionMeta = SECTIONS.find((s) => s.slug === section);
+		if (!sectionMeta) {
+			return new Response(
+				JSON.stringify({
+					error: `Section "${section}" is not defined. Available: ${SECTIONS.map((s) => s.slug).join(", ")}`,
+				}),
 				{ status: 400, headers: { "Content-Type": "application/json" } },
 			);
 		}
@@ -37,10 +46,19 @@ export const DELETE: APIRoute = async ({ request }) => {
 	try {
 		const { section, folderPath } = await request.json();
 
-		const sectionMeta = PARA_SECTIONS.find((s) => s.slug === section);
-		if (!sectionMeta || !folderPath) {
+		if (!folderPath) {
 			return new Response(
-				JSON.stringify({ error: "Invalid section or folderPath" }),
+				JSON.stringify({ error: "Missing folderPath" }),
+				{ status: 400, headers: { "Content-Type": "application/json" } },
+			);
+		}
+
+		const sectionMeta = SECTIONS.find((s) => s.slug === section);
+		if (!sectionMeta) {
+			return new Response(
+				JSON.stringify({
+					error: `Section "${section}" is not defined. Available: ${SECTIONS.map((s) => s.slug).join(", ")}`,
+				}),
 				{ status: 400, headers: { "Content-Type": "application/json" } },
 			);
 		}

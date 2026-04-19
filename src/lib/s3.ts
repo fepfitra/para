@@ -1,5 +1,7 @@
 import { AwsClient } from "aws4fetch";
 
+declare const process: { env?: Record<string, string | undefined> } | undefined;
+
 const s3 = new AwsClient({
 	accessKeyId: import.meta.env.S3_ACCESS_KEY,
 	secretAccessKey: import.meta.env.S3_SECRET_KEY,
@@ -10,12 +12,72 @@ const s3 = new AwsClient({
 const ENDPOINT = import.meta.env.S3_ENDPOINT || "https://s3.g.s4.mega.io";
 const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
 
-export const PARA_SECTIONS = [
-	{ prefix: "1. Projects/", slug: "projects", label: "Projects" },
-	{ prefix: "2. Areas/", slug: "areas", label: "Areas" },
-	{ prefix: "3. Resources/", slug: "resources", label: "Resources" },
-	{ prefix: "4. Archives/", slug: "archives", label: "Archives" },
-] as const;
+// Parse sections from env (required)
+// Format: "prefix/slug/label,prefix/slug/label"
+// Example: "Projects/projects/Projects,Areas/areas/Areas"
+export const getSections = (): { prefix: string; slug: string; label: string }[] => {
+	// Try import.meta.env first (Vite/Astro), then process.env (Node/Bun)
+	const envSections = import.meta.env?.SECTIONS ?? process?.env?.SECTIONS;
+	if (!envSections) {
+		throw new Error(
+			"SECTIONS environment variable is required but not set. " +
+				"Format: 'prefix/slug/label,prefix/slug/label' " +
+				"Example: 'Projects/projects/Projects,Areas/areas/Areas'",
+		);
+	}
+
+	const sections = envSections.split(",").map((section: string) => {
+		const parts = section.trim().split("/");
+		if (parts.length < 3) {
+			throw new Error(
+				`Invalid section format: "${section}". ` +
+					`Expected format: "prefix/slug/label"`,
+			);
+		}
+		// Handle case where label itself contains "/"
+		const prefix = parts[0];
+		const slug = parts[1];
+		const label = parts.slice(2).join("/");
+
+		if (!prefix || !slug || !label) {
+			throw new Error(
+				`Invalid section format: "${section}". ` +
+					`Expected format: "prefix/slug/label"`,
+			);
+		}
+		return {
+			prefix: prefix + "/",
+			slug,
+			label,
+		};
+	});
+
+	if (sections.length === 0) {
+		throw new Error("SECTIONS must contain at least one section");
+	}
+
+	return sections;
+};
+
+// Cache for sections after first access
+let _sectionsCache: { prefix: string; slug: string; label: string }[] | null = null;
+
+export const SECTIONS: { prefix: string; slug: string; label: string }[] = new Proxy(
+	[] as { prefix: string; slug: string; label: string }[],
+	{
+		get(target, prop) {
+			if (_sectionsCache === null) {
+				_sectionsCache = getSections();
+			}
+			const value = _sectionsCache[prop as keyof typeof _sectionsCache];
+			// Handle array methods like find, map, etc.
+			if (typeof value === 'function') {
+				return value.bind(_sectionsCache);
+			}
+			return value;
+		},
+	},
+);
 
 export interface S3Entry {
 	key: string;
@@ -285,8 +347,8 @@ export async function getPinnedFolders(
 	sectionSlug?: string,
 ): Promise<PinnedFolder[]> {
 	const sections = sectionSlug
-		? PARA_SECTIONS.filter((s) => s.slug === sectionSlug)
-		: PARA_SECTIONS;
+		? SECTIONS.filter((s) => s.slug === sectionSlug)
+		: SECTIONS;
 
 	const results: PinnedFolder[] = [];
 
@@ -340,8 +402,14 @@ export async function resolveKey(
 	sectionSlug: string,
 	pageSlug: string,
 ): Promise<{ key: string; title: string } | null> {
-	const section = PARA_SECTIONS.find((s) => s.slug === sectionSlug);
-	if (!section) return null;
+	const section = SECTIONS.find((s) => s.slug === sectionSlug);
+	if (!section) {
+		throw new Error(
+			`Section "${sectionSlug}" is not defined. ` +
+				`Available sections: ${SECTIONS.map((s) => s.slug).join(", ")}. ` +
+				`Check your SECTIONS env variable.`,
+			);
+	}
 
 	const entries = await listSection(section.prefix);
 	const entry = entries.find((e) => e.slug === pageSlug);

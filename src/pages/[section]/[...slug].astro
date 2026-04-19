@@ -4,7 +4,7 @@ import Sidebar from "../../components/Sidebar.astro";
 import TableOfContents from "../../components/TableOfContents.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import {
-	PARA_SECTIONS,
+	SECTIONS,
 	listSection,
 	buildTree,
 	fetchMarkdown,
@@ -16,7 +16,7 @@ import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter }
 const { section, slug } = Astro.params;
 const pageSlug = Array.isArray(slug) ? slug.join("/") : slug;
 
-const sectionMeta = PARA_SECTIONS.find((s) => s.slug === section);
+const sectionMeta = SECTIONS.find((s) => s.slug === section);
 if (!sectionMeta) {
 	return Astro.redirect("/");
 }

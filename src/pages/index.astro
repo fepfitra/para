@@ -2,12 +2,12 @@
 import Layout from "../layouts/Layout.astro";
 import Container from "../components/Container.astro";
 import TaskList from "../components/TaskList.astro";
-import { PARA_SECTIONS, listSection, getPinnedFolders } from "../lib/s3";
+import { SECTIONS, listSection, getPinnedFolders } from "../lib/s3";
 import { getActiveTasks } from "../lib/tasks";
 
 const [counts, pinned, activeTasks] = await Promise.all([
 	Promise.all(
-		PARA_SECTIONS.map(async (s) => {
+		SECTIONS.map(async (s) => {
 			const entries = await listSection(s.prefix);
 			return { ...s, count: entries.length };
 		}),

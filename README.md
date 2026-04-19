@@ -1,10 +1,10 @@
-# PARA - Personal Knowledge Management
+# S3 Markdown Vault Browser
 
-A server-side rendered (SSR) web application for browsing and managing a markdown vault stored in S3, organized using the PARA method.
+A server-side rendered (SSR) web application for browsing and managing a markdown vault stored in S3. Organize your notes in any folder structure you want.
 
 ## Features
 
-- **PARA Method Organization**: Browse Projects, Areas, Resources, and Archives
+- **Custom Folder Structure**: Configure any number of top-level sections
 - **Task Management**: View active tasks with urgency-based sorting, dedicated task page with sidebar
 - **Search**: Search note titles and paths (metadata only, not content)
 - **Syntax Highlighting**: Code blocks rendered with highlight.js
@@ -56,18 +56,19 @@ A server-side rendered (SSR) web application for browsing and managing a markdow
 │   │   │   ├── pin.ts      # Pin/unpin API
 │   │   │   └── img/        # Image proxy endpoint
 │   │   ├── index.astro     # Homepage
-│   │   ├── [section]/      # PARA sections (projects, areas, etc.)
+│   │   ├── [section]/      # Section pages (dynamic)
 │   │   └── tasks/          # Task management pages
 │   └── styles/
 │       └── global.css      # Tailwind + custom styles
 ├── .env                    # Environment variables (not in git)
+├── .env.example            # Example env file
 ├── wrangler.toml          # Cloudflare Workers config
 └── astro.config.mjs       # Astro configuration
 ```
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (see `.env.example` for reference):
 
 ```env
 S3_ENDPOINT=https://s3.example.com
@@ -75,28 +76,56 @@ S3_BUCKET=my-bucket
 S3_ACCESS_KEY=your-access-key
 S3_SECRET_KEY=your-secret-key
 S3_REGION=us-east-1
+
+# Required: Define your folder sections
+SECTIONS="Projects/projects/Projects,Areas/areas/Areas"
 ```
 
-**Important**: These credentials are inlined at build time by Astro's Cloudflare adapter. The bucket should be private — images are served through the `/api/img/*` proxy endpoint using these credentials.
+**Important**:
+- `SECTIONS` is **required** — the app will fail to start without it
+- S3 credentials are inlined at build time by Astro's Cloudflare adapter
+- The bucket should be private — images are served through the `/api/img/*` proxy endpoint
+
+### Sections Format
+
+The `SECTIONS` env variable defines your top-level folder structure. Format is comma-separated entries of `prefix/slug/label`:
+
+```env
+# Simple 2-folder structure
+SECTIONS="Work/work/Work,Personal/personal/Personal"
+
+# PARA method
+SECTIONS="1. Projects/projects/Projects,2. Areas/areas/Areas,3. Resources/resources/Resources,4. Archives/archives/Archives"
+
+# Custom naming
+SECTIONS="01-Active/active/Active Projects,99-Done/done/Completed"
+```
+
+Each section needs:
+- **prefix**: The actual folder name in S3 (e.g., "1. Projects/")
+- **slug**: The URL path (e.g., "projects")
+- **label**: The display name (e.g., "Projects")
 
 ## S3 Bucket Structure
 
-Your S3 bucket should follow this structure:
+Your S3 bucket should match your SECTIONS configuration:
 
 ```
 my-bucket/
-├── 1. Projects/           # Projects folder
+├── 1. Projects/           # Section folder
 │   └── Project_Name/
 │       ├── note.md
 │       └── image.jpg
-├── 2. Areas/              # Areas of responsibility
-├── 3. Resources/          # Reference materials
-├── 4. Archives/           # Completed/inactive items
+├── 2. Areas/              # Another section
+├── 3. Resources/          # Another section
+├── 4. Archives/           # Another section
 ├── TaskNotes/
 │   ├── Tasks/             # Task markdown files
 │   └── Views/             # Task view configurations
-└── _attachments/          # Global attachments
+└── _attachments/          # Global attachments (optional)
 ```
+
+**Note:** If a folder defined in `SECTIONS` doesn't exist in S3, the section page will show "No notes in this section yet." No error is thrown — the app handles missing folders gracefully.
 
 ### Task File Format
 
@@ -182,7 +211,7 @@ Images referenced with relative paths in markdown are automatically proxied:
 ![Alt text](../other-folder/image.png)
 ```
 
-The image URL is rewritten from `./image.jpg` → `/api/img/1.%20Projects/Folder/image.jpg`, keeping your S3 bucket private.
+The image URL is rewritten from `./image.jpg` → `/api/img/Folder/image.jpg`, keeping your S3 bucket private.
 
 ### Search
 

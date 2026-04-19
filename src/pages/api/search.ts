@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { PARA_SECTIONS, listSection } from "../../lib/s3";
+import { SECTIONS, listSection } from "../../lib/s3";
 
 export const GET: APIRoute = async ({ url }) => {
 	const query = (url.searchParams.get("q") ?? "").trim().toLowerCase();
@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ url }) => {
 	const terms = query.split(/\s+/).filter(Boolean);
 
 	const allEntries = await Promise.all(
-		PARA_SECTIONS.map(async (section) => {
+		SECTIONS.map(async (section) => {
 			const entries = await listSection(section.prefix);
 			return entries.map((e) => ({
 				title: e.title,
