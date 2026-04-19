@@ -12,129 +12,151 @@ const pathname = Astro.url.pathname;
 
 <header>
   <Container size={containerSize}>
-    <div class="flex flex-wrap items-center justify-between gap-y-2">
-      <a href="/" class="flex items-center gap-1.5 font-semibold text-current no-underline hover:text-black dark:hover:text-white transition-colors duration-300">
+    {/* Top row: Brand + nav (desktop) + actions */}
+    <div class="flex items-center justify-between gap-4">
+      <a href="/" class="flex items-center gap-1.5 font-semibold text-current no-underline hover:text-black dark:hover:text-white transition-colors duration-300 shrink-0">
         <span class="text-lg leading-none">🧠</span>
         PARA
       </a>
-      <div class="flex items-center gap-4">
-        <nav class="flex items-center gap-4 text-sm">
-          {PARA_SECTIONS.map((s, i) => (
-            <Fragment>
-              {i > 0 && <span>/</span>}
-              <a
-                href={`/${s.slug}`}
-                class:list={[
-                  "no-underline transition-colors duration-300 ease-in-out",
-                  pathname.startsWith(`/${s.slug}`)
-                    ? "text-black dark:text-white font-medium"
-                    : "text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50",
-                ]}
-              >
-                {s.label.toLowerCase()}
-              </a>
-            </Fragment>
-          ))}
-        </nav>
-        <div class="flex items-center gap-1">
-          <button
-            id="search-trigger"
-            aria-label="Search"
-            class="group flex items-center gap-1.5 rounded-sm border border-black/15 px-2 py-1 text-xs text-black/40 transition-colors hover:bg-black/5 hover:text-black/60 focus-visible:bg-black/5 dark:border-white/20 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/60 dark:focus-visible:bg-white/5"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+      
+      {/* Desktop nav - centered */}
+      <nav class="hidden sm:flex items-center gap-4 text-sm">
+        {PARA_SECTIONS.map((s, i) => (
+          <Fragment>
+            {i > 0 && <span>/</span>}
+            <a
+              href={`/${s.slug}`}
+              class:list={[
+                "no-underline transition-colors duration-300 ease-in-out",
+                pathname.startsWith(`/${s.slug}`)
+                  ? "text-black dark:text-white font-medium"
+                  : "text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50",
+              ]}
             >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <span class="hidden sm:inline">Search</span>
-            <kbd class="hidden rounded border border-black/15 px-1 py-0.5 text-[10px] leading-none dark:border-white/20 sm:inline">&#8984;K</kbd>
-          </button>
-          <button
-            id="light-theme-button"
-            aria-label="Light theme"
-            class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+              {s.label.toLowerCase()}
+            </a>
+          </Fragment>
+        ))}
+      </nav>
+      
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          id="search-trigger"
+          aria-label="Search"
+          class="group flex items-center gap-1.5 rounded-sm border border-black/15 px-2 py-1 text-xs text-black/40 transition-colors hover:bg-black/5 hover:text-black/60 focus-visible:bg-black/5 dark:border-white/20 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/60 dark:focus-visible:bg-white/5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
-            >
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-          </button>
-          <button
-            id="dark-theme-button"
-            aria-label="Dark theme"
-            class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Search</span>
+          <kbd class="hidden rounded border border-black/15 px-1 py-0.5 text-[10px] leading-none dark:border-white/20 sm:inline">&#8984;K</kbd>
+        </button>
+        <button
+          id="light-theme-button"
+          aria-label="Light theme"
+          class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-          </button>
-          <button
-            id="system-theme-button"
-            aria-label="System theme"
-            class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <button
+          id="dark-theme-button"
+          aria-label="Dark theme"
+          class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
-            >
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-          </button>
-        </div>
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <button
+          id="system-theme-button"
+          aria-label="System theme"
+          class="group flex size-8 items-center justify-center rounded-sm border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="transition-colors duration-300 ease-in-out group-hover:animate-pulse group-hover:stroke-black group-focus-visible:animate-pulse group-focus-visible:stroke-black dark:group-hover:stroke-white dark:group-focus-visible:stroke-white"
+          >
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </button>
       </div>
     </div>
+    
+    {/* Mobile nav - second row */}
+    <nav class="flex sm:hidden items-center gap-3 text-sm mt-3 pb-1 overflow-x-auto">
+      {PARA_SECTIONS.map((s, i) => (
+        <Fragment>
+          {i > 0 && <span class="text-black/20 dark:text-white/20">/</span>}
+          <a
+            href={`/${s.slug}`}
+            class:list={[
+              "no-underline transition-colors duration-300 ease-in-out whitespace-nowrap",
+              pathname.startsWith(`/${s.slug}`)
+                ? "text-black dark:text-white font-medium"
+                : "text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50",
+            ]}
+          >
+            {s.label.toLowerCase()}
+          </a>
+        </Fragment>
+      ))}
+    </nav>
   </Container>
 </header>
