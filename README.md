@@ -86,6 +86,19 @@ SECTIONS="Projects/projects/Projects,Areas/areas/Areas"
 - S3 credentials are inlined at build time by Astro's Cloudflare adapter
 - The bucket should be private — images are served through the `/api/img/*` proxy endpoint
 
+### Cloudflare R2
+
+This app works with Cloudflare R2 (S3-compatible). See `.env.r2.example` for R2-specific configuration:
+
+```bash
+cp .env.r2.example .env
+# Then add your R2 credentials from the Cloudflare Dashboard
+```
+
+R2-specific settings:
+- Use `S3_REGION=auto` for R2
+- Get your Access Key ID and Secret from R2 API Tokens in the Cloudflare Dashboard
+
 ### Sections Format
 
 The `SECTIONS` env variable defines your top-level folder structure. Format is comma-separated entries of `prefix/slug/label`:

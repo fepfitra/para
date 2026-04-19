@@ -69,7 +69,7 @@ const [counts, pinned, activeTasks] = await Promise.all([
 
 		{TASKS_ENABLED && <TaskList tasks={activeTasks} scrollable />}
 
-		<div class:list={["grid grid-cols-1 gap-3 sm:grid-cols-2", (pinned.length > 0 || TASKS_ENABLED) && "mt-10"]}>
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-10">
 			{counts.map((s, i) => (
 				<a
 					href={`/${s.slug}`}
