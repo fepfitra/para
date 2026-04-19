@@ -12,10 +12,10 @@ const tasks = await getActiveTasks();
 ---
 
 <DocLayout title="Tasks" description="Active tasks from the second brain.">
-	<div class="flex flex-col gap-8 md:flex-row">
+	<div class="flex flex-col gap-8 lg:flex-row">
 		<!-- Left sidebar: task list -->
-		<div class="w-full md:w-64 md:shrink-0">
-			<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
+		<div class="w-full lg:w-64 lg:shrink-0">
+			<div class="lg:sticky lg:top-32 lg:max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
 				<TaskSidebar tasks={tasks} />
 			</div>
 		</div>

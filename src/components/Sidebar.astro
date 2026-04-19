@@ -14,10 +14,37 @@ interface Props {
 const { nodes, currentPath, sectionLabel, sectionSlug, pinnedFolders = [], pinnedPaths } = Astro.props;
 ---
 
-<aside class="w-full pr-4 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
+<aside class="w-full pr-4 lg:flex-shrink-0 lg:border-r lg:border-black/10 dark:lg:border-white/10">
+	<style>
+		/* Mobile (<768px): hidden by default */
+		.sidebar-content {
+			display: none;
+		}
+		.sidebar-content.visible {
+			display: block;
+		}
+		/* Desktop small (768-1024px): hidden by default */
+		@media (min-width: 768px) and (max-width: 1023px) {
+			.sidebar-content {
+				display: none;
+			}
+			.sidebar-content.visible {
+				display: block;
+			}
+		}
+		/* Desktop large (>=1024px): visible by default */
+		@media (min-width: 1024px) {
+			.sidebar-content {
+				display: block;
+			}
+			.sidebar-content.force-hidden {
+				display: none;
+			}
+		}
+	</style>
 	<button
 		id="sidebar-toggle"
-		class="mb-4 flex items-center gap-2 text-lg font-semibold md:hidden"
+		class="mb-4 flex items-center gap-2 text-lg font-semibold"
 		aria-expanded="false"
 		aria-controls="sidebar-content"
 	>
@@ -36,11 +63,11 @@ const { nodes, currentPath, sectionLabel, sectionSlug, pinnedFolders = [], pinne
 			<line x1="4" x2="20" y1="6" y2="6"></line>
 			<line x1="4" x2="20" y1="18" y2="18"></line>
 		</svg>
-		Menu
+		<span class="menu-text">Menu</span>
 	</button>
 
-	<div id="sidebar-content" class="hidden md:block pb-8">
-		<div class="mb-4 text-lg font-semibold">
+	<div id="sidebar-content" class="sidebar-content pb-8">
+		<div class="mt-6 mb-4 text-lg font-semibold">
 			<a
 				href={`/${sectionSlug}`}
 				class:list={[
@@ -109,18 +136,35 @@ const { nodes, currentPath, sectionLabel, sectionSlug, pinnedFolders = [], pinne
 <script>
 	import { initPinToggle, initPinnedUnpin } from "../lib/pin-toggle";
 
-	// Mobile sidebar toggle
+	// Sidebar toggle (works on all screen sizes)
 	const toggleButton = document.getElementById("sidebar-toggle");
 	const sidebarContent = document.getElementById("sidebar-content");
+	const menuText = toggleButton?.querySelector('.menu-text');
 
 	if (toggleButton && sidebarContent) {
 		toggleButton.addEventListener("click", () => {
 			const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
 			toggleButton.setAttribute("aria-expanded", (!isExpanded).toString());
-			sidebarContent.classList.toggle("hidden");
+			
+			// Mobile + Desktop small (<1024px): toggle 'visible' class
+			// Desktop large (>=1024px): toggle 'force-hidden' class
+			if (window.innerWidth < 1024) {
+				sidebarContent.classList.toggle("visible");
+			} else {
+				sidebarContent.classList.toggle("force-hidden");
+				// Toggle menu text on desktop: show when sidebar is visible, hide when hidden
+				if (menuText) {
+					menuText.style.display = sidebarContent.classList.contains('force-hidden') ? 'none' : 'inline';
+				}
+			}
 		});
 	}
 
 	initPinToggle();
 	initPinnedUnpin();
+
+	// Set initial menu text state on desktop (sidebar visible by default = show text)
+	if (window.innerWidth >= 1024 && menuText) {
+		menuText.style.display = 'inline';
+	}
 </script>

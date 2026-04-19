@@ -22,32 +22,58 @@ const statusIcons: Record<string, string> = {
 };
 ---
 
-<aside class="w-full pr-4 md:flex-shrink-0 md:border-r md:border-black/10 dark:md:border-white/10">
-	<button
-		id="sidebar-toggle"
-		class="mb-4 flex items-center gap-2 text-lg font-semibold md:hidden"
-		aria-expanded="false"
-		aria-controls="sidebar-content"
-	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<line x1="4" x2="20" y1="12" y2="12"></line>
-			<line x1="4" x2="20" y1="6" y2="6"></line>
-			<line x1="4" x2="20" y1="18" y2="18"></line>
-		</svg>
-		Tasks
-	</button>
+<aside class="w-full pr-4 lg:flex-shrink-0 lg:border-r lg:border-black/10 dark:lg:border-white/10">
+  <style>
+    .sidebar-content {
+      display: none;
+    }
+    .sidebar-content.visible {
+      display: block;
+    }
+    /* Mobile (<768px): hidden by default */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sidebar-content {
+        display: none;
+      }
+      .sidebar-content.visible {
+        display: block;
+      }
+    }
+    /* Desktop large (>=1024px): visible by default */
+    @media (min-width: 1024px) {
+      .sidebar-content {
+        display: block;
+      }
+      .sidebar-content.force-hidden {
+        display: none;
+      }
+    }
+  </style>
+  <button
+    id="sidebar-toggle"
+    class="mb-4 flex items-center gap-2 text-lg font-semibold"
+    aria-expanded="false"
+    aria-controls="sidebar-content"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <line x1="4" x2="20" y1="12" y2="12"></line>
+      <line x1="4" x2="20" y1="6" y2="6"></line>
+      <line x1="4" x2="20" y1="18" y2="18"></line>
+    </svg>
+    <span class="menu-text">Tasks</span>
+  </button>
 
-	<div id="sidebar-content" class="hidden md:block pb-8">
+  <div id="sidebar-content" class="sidebar-content pb-8">
 		<div class="mb-4 text-lg font-semibold">
 			<a
 				href="/tasks"
@@ -104,14 +130,31 @@ const statusIcons: Record<string, string> = {
 </aside>
 
 <script>
-	const toggleButton = document.getElementById("sidebar-toggle");
-	const sidebarContent = document.getElementById("sidebar-content");
+  const toggleButton = document.getElementById("sidebar-toggle");
+  const sidebarContent = document.getElementById("sidebar-content");
+  const menuText = toggleButton?.querySelector('.menu-text');
 
-	if (toggleButton && sidebarContent) {
-		toggleButton.addEventListener("click", () => {
-			const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
-			toggleButton.setAttribute("aria-expanded", (!isExpanded).toString());
-			sidebarContent.classList.toggle("hidden");
-		});
-	}
+  if (toggleButton && sidebarContent) {
+    toggleButton.addEventListener("click", () => {
+      const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+      toggleButton.setAttribute("aria-expanded", (!isExpanded).toString());
+      
+      // Mobile + Desktop small (<1024px): toggle 'visible' class
+      // Desktop large (>=1024px): toggle 'force-hidden' class
+      if (window.innerWidth < 1024) {
+        sidebarContent.classList.toggle("visible");
+      } else {
+        sidebarContent.classList.toggle("force-hidden");
+        // Toggle menu text on desktop: show when sidebar is visible, hide when hidden
+        if (menuText) {
+          menuText.style.display = sidebarContent.classList.contains('force-hidden') ? 'none' : 'inline';
+        }
+      }
+    });
+  }
+
+  // Set initial menu text state on desktop (sidebar visible by default = show text)
+  if (window.innerWidth >= 1024 && menuText) {
+    menuText.style.display = 'inline';
+  }
 </script>

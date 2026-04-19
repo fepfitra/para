@@ -45,10 +45,10 @@ const crumbs = entry.segments.slice(0, -1);
 ---
 
 <DocLayout title={title} description={`${title} — ${sectionMeta.label}`}>
-	<div class="flex flex-col gap-8 md:flex-row">
-		<!-- Left sidebar -->
-		<div class="w-full md:w-64 md:shrink-0">
-			<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
+  <div class="flex flex-col gap-8 lg:flex-row" id="page-layout">
+    <!-- Left sidebar -->
+    <div class="sidebar-wrapper w-full lg:w-64 lg:shrink-0 transition-all duration-300" id="sidebar-wrapper">
+      <div class="lg:sticky lg:top-32 lg:max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
 				<Sidebar
 					nodes={tree}
 					currentPath={currentPath}
@@ -106,3 +106,35 @@ const crumbs = entry.segments.slice(0, -1);
 		)}
 	</div>
 </DocLayout>
+
+<style>
+	@media (min-width: 1024px) {
+		.sidebar-wrapper.collapsed {
+			width: auto;
+			min-width: 0;
+			flex-shrink: 0;
+		}
+		.sidebar-wrapper.collapsed :global(aside) {
+			padding-right: 0;
+			border-right: none;
+		}
+	}
+</style>
+
+<script>
+	// Handle sidebar collapse on desktop
+	const sidebarWrapper = document.getElementById('sidebar-wrapper');
+	const sidebarToggle = document.getElementById('sidebar-toggle');
+	const sidebarContent = document.getElementById('sidebar-content');
+
+	if (sidebarWrapper && sidebarToggle && sidebarContent) {
+		sidebarToggle.addEventListener('click', () => {
+			const isHidden = sidebarContent.classList.contains('force-hidden');
+			if (isHidden) {
+				sidebarWrapper.classList.add('collapsed');
+			} else {
+				sidebarWrapper.classList.remove('collapsed');
+			}
+		});
+	}
+</script>
