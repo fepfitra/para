@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import Container from "../components/Container.astro";
 import TaskList from "../components/TaskList.astro";
 import { SECTIONS, listSection, getPinnedFolders } from "../lib/s3";
-import { getActiveTasks } from "../lib/tasks";
+import { getActiveTasks, TASKS_ENABLED } from "../lib/tasks";
 
 const [counts, pinned, activeTasks] = await Promise.all([
 	Promise.all(
@@ -13,7 +13,7 @@ const [counts, pinned, activeTasks] = await Promise.all([
 		}),
 	),
 	getPinnedFolders(),
-	getActiveTasks(),
+	TASKS_ENABLED ? getActiveTasks() : Promise.resolve([]),
 ]);
 ---
 
@@ -67,9 +67,9 @@ const [counts, pinned, activeTasks] = await Promise.all([
 			</div>
 		)}
 
-		<TaskList tasks={activeTasks} scrollable />
+		{TASKS_ENABLED && <TaskList tasks={activeTasks} scrollable />}
 
-		<div class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
+		<div class:list={["grid grid-cols-1 gap-3 sm:grid-cols-2", (pinned.length > 0 || TASKS_ENABLED) && "mt-10"]}>
 			{counts.map((s, i) => (
 				<a
 					href={`/${s.slug}`}

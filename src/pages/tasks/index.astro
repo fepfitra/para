@@ -2,7 +2,11 @@
 import DocLayout from "../../layouts/DocLayout.astro";
 import TaskSidebar from "../../components/TaskSidebar.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
-import { getActiveTasks } from "../../lib/tasks";
+import { getActiveTasks, TASKS_ENABLED } from "../../lib/tasks";
+
+if (!TASKS_ENABLED) {
+  return Astro.redirect("/");
+}
 
 const tasks = await getActiveTasks();
 ---

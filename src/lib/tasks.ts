@@ -9,7 +9,19 @@ const s3 = new AwsClient({
 
 const ENDPOINT = import.meta.env.S3_ENDPOINT || "https://s3.g.s4.mega.io";
 const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
-const TASKS_PREFIX = "TaskNotes/Tasks/";
+
+// Tasks configuration from env
+// If TASKS_PREFIX is not set or empty, tasks feature is disabled
+const TASKS_PREFIX_RAW = import.meta.env.TASKS_PREFIX;
+export const TASKS_ENABLED = Boolean(TASKS_PREFIX_RAW);
+const TASKS_PREFIX = TASKS_ENABLED ? TASKS_PREFIX_RAW : "TaskNotes/Tasks/";
+
+// Tags that mark a file as a task (default: ["task"])
+const TASK_TAGS = (import.meta.env.TASK_TAGS || "task").split(",").map((t: string) => t.trim());
+// Tags that exclude a file from active tasks (default: ["archived"])
+const EXCLUDED_TAGS = (import.meta.env.TASK_EXCLUDED_TAGS || "archived").split(",").map((t: string) => t.trim());
+// Statuses to exclude from active tasks (default: done)
+const EXCLUDED_STATUSES = (import.meta.env.TASK_EXCLUDED_STATUSES || "done").split(",").map((s: string) => s.trim());
 
 // --- Types ---
 
@@ -287,7 +299,7 @@ async function fetchTaskFile(key: string): Promise<string> {
 
 /**
  * Get all active tasks, sorted by urgency (most urgent first).
- * Active = has "task" tag AND does NOT have "archived" tag.
+ * Active = has all TASK_TAGS AND does NOT have any EXCLUDED_TAGS AND status not in EXCLUDED_STATUSES.
  * Cached for 5 minutes.
  */
 export async function getActiveTasks(): Promise<Task[]> {
@@ -309,13 +321,15 @@ export async function getActiveTasks(): Promise<Task[]> {
 					? [fm.tags]
 					: [];
 
-			// Active filter: has "task" tag, no "archived" tag
-			const hasTask = tags.includes("task");
-			const hasArchived = tags.includes("archived");
-			if (!hasTask || hasArchived) return null;
+			// Active filter: must have all required tags, no excluded tags
+			const hasAllRequiredTags = TASK_TAGS.every((tag: string) => tags.includes(tag));
+			if (!hasAllRequiredTags) return null;
+
+			const hasExcludedTag = EXCLUDED_TAGS.some((tag: string) => tags.includes(tag));
+			if (hasExcludedTag) return null;
 
 			const status = (fm.status as string) || "todo";
-			if (status === "done") return null; // Also exclude done tasks
+			if (EXCLUDED_STATUSES.includes(status)) return null;
 
 			const priority = (fm.priority as string) || "none";
 			const due = fm.due as string | undefined;

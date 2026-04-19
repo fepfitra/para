@@ -106,6 +106,28 @@ Each section needs:
 - **slug**: The URL path (e.g., "projects")
 - **label**: The display name (e.g., "Projects")
 
+### Tasks Configuration
+
+Control how tasks are detected and filtered:
+
+```env
+# Where task files are located in S3
+TASKS_PREFIX="TaskNotes/Tasks/"
+
+# Required tags for a file to be considered a task (ALL must match)
+TASK_TAGS="task"
+
+# Tags that exclude a task from "active" list (ANY excludes)
+TASK_EXCLUDED_TAGS="archived"
+
+# Statuses that exclude a task from "active" list
+TASK_EXCLUDED_STATUSES="done"
+```
+
+**Default behavior**: A task file must have the `task` tag, must NOT have the `archived` tag, and status must NOT be `done`.
+
+**Hiding Tasks**: If `TASKS_PREFIX` is not set (or set to empty string), the entire tasks feature is hidden — no "Active Tasks" section on homepage, no `/tasks` page, and no task-related UI.
+
 ## S3 Bucket Structure
 
 Your S3 bucket should match your SECTIONS configuration:

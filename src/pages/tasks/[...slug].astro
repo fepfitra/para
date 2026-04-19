@@ -3,8 +3,12 @@ import DocLayout from "../../layouts/DocLayout.astro";
 import TaskSidebar from "../../components/TaskSidebar.astro";
 import TableOfContents from "../../components/TableOfContents.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
-import { getActiveTasks, resolveTask, fetchTaskContent } from "../../lib/tasks";
+import { getActiveTasks, resolveTask, fetchTaskContent, TASKS_ENABLED } from "../../lib/tasks";
 import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
+
+if (!TASKS_ENABLED) {
+  return Astro.redirect("/");
+}
 
 const { slug } = Astro.params;
 const taskSlug = Array.isArray(slug) ? slug.join("/") : slug;
