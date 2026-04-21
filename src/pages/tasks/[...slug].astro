@@ -24,6 +24,8 @@ const body = stripFrontmatter(raw);
 const rawHtml = await renderMarkdownWithContext(raw, task.key);
 const { html: htmlContent, toc } = extractToc(rawHtml);
 const title = extractTitle(body) || task.title;
+// Remove the first h1 from content since we render it manually
+const htmlContentWithoutH1 = htmlContent.replace(/<h1[^>]*>.*?<\/h1>/i, "");
 
 const priorityLabel: Record<string, string> = {
 	high: "High",
@@ -104,7 +106,7 @@ const priorityColor: Record<string, string> = {
 					</div>
 				</div>
 
-				<div class="animate mt-8" set:html={htmlContent} />
+				<div class="animate mt-8" set:html={htmlContentWithoutH1} />
 			</article>
 		</div>
 
