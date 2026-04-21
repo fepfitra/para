@@ -17,7 +17,7 @@ const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
 // Example: "Projects/projects/Projects,Areas/areas/Areas"
 export const getSections = (): { prefix: string; slug: string; label: string }[] => {
 	// Try import.meta.env first (Vite/Astro), then process.env (Node/Bun)
-	const envSections = import.meta.env?.SECTIONS ?? process?.env?.SECTIONS;
+	const envSections = import.meta.env?.SECTIONS || process?.env?.SECTIONS;
 	if (!envSections) {
 		throw new Error(
 			"SECTIONS environment variable is required but not set. " +
@@ -26,31 +26,35 @@ export const getSections = (): { prefix: string; slug: string; label: string }[]
 		);
 	}
 
-	const sections = envSections.split(",").map((section: string) => {
-		const parts = section.trim().split("/");
-		if (parts.length < 3) {
-			throw new Error(
-				`Invalid section format: "${section}". ` +
-					`Expected format: "prefix/slug/label"`,
-			);
-		}
-		// Handle case where label itself contains "/"
-		const prefix = parts[0];
-		const slug = parts[1];
-		const label = parts.slice(2).join("/");
+	const sections = envSections
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean)
+		.map((section: string) => {
+			const parts = section.split("/");
+			if (parts.length < 3) {
+				throw new Error(
+					`Invalid section format: "${section}". ` +
+						`Expected format: "prefix/slug/label". ` +
+						`Raw SECTIONS value: "${envSections}"`,
+				);
+			}
+			const prefix = parts[0];
+			const slug = parts[1];
+			const label = parts.slice(2).join("/");
 
-		if (!prefix || !slug || !label) {
-			throw new Error(
-				`Invalid section format: "${section}". ` +
-					`Expected format: "prefix/slug/label"`,
-			);
-		}
-		return {
-			prefix: prefix + "/",
-			slug,
-			label,
-		};
-	});
+			if (!prefix || !slug || !label) {
+				throw new Error(
+					`Invalid section format: "${section}". ` +
+						`Expected format: "prefix/slug/label"`,
+				);
+			}
+			return {
+				prefix: prefix + "/",
+				slug,
+				label,
+			};
+		});
 
 	if (sections.length === 0) {
 		throw new Error("SECTIONS must contain at least one section");
