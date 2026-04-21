@@ -87,9 +87,19 @@ const crumbs = entry.segments.slice(0, -1);
 							</Fragment>
 						))}
 					</div>
+					<div class="flex items-center justify-between gap-4">
 					<h1 class="text-2xl font-semibold text-black dark:text-white">
 						{title}
 					</h1>
+					<button
+						id="copy-md-btn"
+						class="shrink-0 cursor-pointer rounded-md border border-black/10 px-2 py-1 text-xs font-medium text-black/50 transition-colors hover:border-black/20 hover:text-black/70 dark:border-white/10 dark:text-white/50 dark:hover:border-white/20 dark:hover:text-white/70 not-prose"
+						type="button"
+						data-raw={body}
+>
+						📋 Copy
+					</button>
+				</div>
 				</div>
 
 				<div class="animate mt-8" set:html={htmlContent} />
@@ -135,6 +145,17 @@ const crumbs = entry.segments.slice(0, -1);
 			} else {
 				sidebarWrapper.classList.remove('collapsed');
 			}
+		});
+	}
+
+	// Copy markdown button
+	const copyBtn = document.getElementById('copy-md-btn');
+	if (copyBtn) {
+		copyBtn.addEventListener('click', async () => {
+			const text = copyBtn.getAttribute('data-raw') || '';
+			await navigator.clipboard.writeText(text);
+			copyBtn.textContent = '✓ Copied';
+			setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 2000);
 		});
 	}
 </script>
