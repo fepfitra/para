@@ -89,8 +89,13 @@ export const getSections = async (): Promise<{ prefix: string; slug: string; lab
 };
 
 // Cache for sections after first load
-let _sectionsCache: { prefix: string; slug: string; label: string }[] | null = null;
 let _sectionsPromise: Promise<{ prefix: string; slug: string; label: string }[]> | null = null;
+let _sectionsCache: { prefix: string; slug: string; label: string }[] | null = null;
+
+export function invalidateSectionsCache(): void {
+	_sectionsCache = null;
+	_sectionsPromise = null;
+}
 
 export async function loadSections(): Promise<{ prefix: string; slug: string; label: string }[]> {
 	if (_sectionsCache) return _sectionsCache;

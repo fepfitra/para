@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { fetchConfig, putConfig } from "../../lib/s3";
+import { fetchConfig, putConfig, invalidateSectionsCache } from "../../lib/s3";
 
 export const GET: APIRoute = async () => {
 	try {
@@ -26,6 +26,7 @@ export const PUT: APIRoute = async ({ request }) => {
 		}
 		// Save raw folder names (server generates slug/label from folder name)
 		await putConfig({ sections: body.sections });
+		invalidateSectionsCache();
 		return new Response(JSON.stringify({ ok: true }), {
 			headers: { "Content-Type": "application/json" },
 		});
