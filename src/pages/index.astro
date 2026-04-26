@@ -70,23 +70,28 @@ const [counts, pinned, activeTasks] = await Promise.all([
 
 		{TASKS_ENABLED && <TaskList tasks={activeTasks} scrollable />}
 
-		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-10">
-			{counts.map((s, i) => (
-				<a
-					href={`/${s.slug}`}
-					class:list={[
-						"animate group flex flex-col gap-1 rounded-sm border border-black/15 dark:border-white/20 p-4 no-underline transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5",
-					]}
-					style={`animation-delay: ${(i + 2) * 100}ms`}
-				>
-					<div class="font-semibold text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30">
-						{s.label}
-					</div>
-					<div class="text-sm text-black/50 dark:text-white/50">
-						{s.count} notes
-					</div>
-				</a>
-			))}
+		<div class="mt-10">
+			<h2 class="mb-3 text-sm font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+				Sections
+			</h2>
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				{counts.map((s, i) => (
+					<a
+						href={`/${s.slug}`}
+						class:list={[
+							"animate group flex flex-col gap-1 rounded-sm border border-black/15 dark:border-white/20 p-4 no-underline transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/5",
+						]}
+						style={`animation-delay: ${(i + 2) * 100}ms`}
+					>
+						<div class="font-semibold text-black dark:text-white group-hover:underline underline-offset-4 decoration-black/30 dark:decoration-white/30">
+							{s.label}
+						</div>
+						<div class="text-sm text-black/50 dark:text-white/50">
+							{s.count} notes
+						</div>
+					</a>
+				))}
+			</div>
 		</div>
 	</Container>
 </Layout>
