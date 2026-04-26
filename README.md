@@ -76,15 +76,26 @@ S3_BUCKET=my-bucket
 S3_ACCESS_KEY=your-access-key
 S3_SECRET_KEY=your-secret-key
 S3_REGION=us-east-1
-
-# Required: Define your folder sections
-SECTIONS="Projects/projects/Projects,Areas/areas/Areas"
 ```
 
-**Important**:
-- `SECTIONS` is **required** — the app will fail to start without it
-- S3 credentials are inlined at build time by Astro's Cloudflare adapter
-- The bucket should be private — images are served through the `/api/img/*` proxy endpoint
+**Note**: S3 credentials are inlined at build time by Astro's Cloudflare adapter. The bucket should be private — images are served through the `/api/img/*` proxy endpoint.
+
+### Sections Configuration
+
+Sections are defined in `para.json` at the root of your S3 bucket, not in the env file. The file contains an array of folder names:
+
+```json
+{
+  "sections": ["1. Projects", "2. Areas", "3. Resources", "4. Archives"]
+}
+```
+
+Each section's `prefix`, `slug`, and `label` are derived automatically from the folder name. For example, `"1. Projects"` becomes:
+- **prefix**: `1. Projects/`
+- **slug**: `1-projects`
+- **label**: `1. Projects`
+
+On first startup, if `para.json` doesn't exist, it will be created automatically from the `SECTIONS` env variable (deprecated) or by scanning top-level folders.
 
 ### Cloudflare R2
 
@@ -98,26 +109,6 @@ cp .env.r2.example .env
 R2-specific settings:
 - Use `S3_REGION=auto` for R2
 - Get your Access Key ID and Secret from R2 API Tokens in the Cloudflare Dashboard
-
-### Sections Format
-
-The `SECTIONS` env variable defines your top-level folder structure. Format is comma-separated entries of `prefix/slug/label`:
-
-```env
-# Simple 2-folder structure
-SECTIONS="Work/work/Work,Personal/personal/Personal"
-
-# PARA method
-SECTIONS="1. Projects/projects/Projects,2. Areas/areas/Areas,3. Resources/resources/Resources,4. Archives/archives/Archives"
-
-# Custom naming
-SECTIONS="01-Active/active/Active Projects,99-Done/done/Completed"
-```
-
-Each section needs:
-- **prefix**: The actual folder name in S3 (e.g., "1. Projects/")
-- **slug**: The URL path (e.g., "projects")
-- **label**: The display name (e.g., "Projects")
 
 ### Tasks Configuration
 
@@ -143,7 +134,7 @@ TASK_EXCLUDED_STATUSES="done"
 
 ## S3 Bucket Structure
 
-Your S3 bucket should match your SECTIONS configuration:
+Your S3 bucket contains markdown files organized in folders. The app scans top-level folders and lists them as sections:
 
 ```
 my-bucket/
@@ -157,10 +148,8 @@ my-bucket/
 ├── TaskNotes/
 │   ├── Tasks/             # Task markdown files
 │   └── Views/             # Task view configurations
-└── _attachments/          # Global attachments (optional)
+└── para.json              # Sections config (auto-generated)
 ```
-
-**Note:** If a folder defined in `SECTIONS` doesn't exist in S3, the section page will show "No notes in this section yet." No error is thrown — the app handles missing folders gracefully.
 
 ### Task File Format
 

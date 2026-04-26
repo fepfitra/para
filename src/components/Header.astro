@@ -34,7 +34,7 @@ const SECTIONS = await loadSections();
                   : "text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50",
               ]}
             >
-              {s.label.toLowerCase()}
+              {s.label}
             </a>
           </Fragment>
         ))}
@@ -173,7 +173,7 @@ const SECTIONS = await loadSections();
                 : "text-current underline underline-offset-[3px] decoration-black/30 dark:decoration-white/30 hover:text-black hover:decoration-black/50 dark:hover:text-white dark:hover:decoration-white/50",
             ]}
           >
-            {s.label.toLowerCase()}
+            {s.label}
           </a>
         </Fragment>
       ))}

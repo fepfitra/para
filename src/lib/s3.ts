@@ -14,10 +14,25 @@ const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
 const CONFIG_KEY = "para.json";
 
 export interface ParaConfig {
-	sections: { prefix: string; slug: string; label: string }[];
+	sections: string[];
 }
 
-async function fetchConfig(): Promise<ParaConfig | null> {
+function sectionFromPrefix(prefix: string): { prefix: string; slug: string; label: string } {
+	const label = prefix.replace(/\/$/, '');
+	return {
+		prefix: prefix.endsWith('/') ? prefix : prefix + '/',
+		slug: label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+		label,
+	};
+}
+
+function sectionsFromConfig(config: ParaConfig | null): { prefix: string; slug: string; label: string }[] | null {
+	if (!config?.sections?.length) return null;
+	const labels = config.sections.map((s: any) => typeof s === 'string' ? s : s.label ?? s);
+	return labels.map((label: string) => sectionFromPrefix(label));
+}
+
+export async function fetchConfig(): Promise<ParaConfig | null> {
 	const encodedKey = CONFIG_KEY.split("/").map((s) => encodeURIComponent(s)).join("/");
 	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
 	const res = await s3.fetch(url);
@@ -29,7 +44,7 @@ async function fetchConfig(): Promise<ParaConfig | null> {
 	return JSON.parse(text) as ParaConfig;
 }
 
-async function putConfig(config: ParaConfig): Promise<void> {
+export async function putConfig(config: ParaConfig): Promise<void> {
 	const encodedKey = CONFIG_KEY.split("/").map((s) => encodeURIComponent(s)).join("/");
 	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
 	const body = JSON.stringify(config, null, 2);
@@ -44,12 +59,14 @@ async function putConfig(config: ParaConfig): Promise<void> {
 }
 
 function parseSectionsFromEnv(): { prefix: string; slug: string; label: string }[] {
+	// SECTIONS env var: comma-separated folder names (prefix = folder name + '/')
+	// Example: "Projects,Areas,Books" or "1. Projects,2. Areas"
 	const envSections = import.meta.env?.SECTIONS || process?.env?.SECTIONS;
 	if (!envSections) {
 		throw new Error(
 			"SECTIONS environment variable is required but not set. " +
-				"Format: 'prefix/slug/label,prefix/slug/label' " +
-				"Example: 'Projects/projects/Projects,Areas/areas/Areas'",
+				"Format: 'FolderName,FolderName,FolderName' " +
+				"Example: 'Projects,Areas,Books'",
 		);
 	}
 
@@ -57,48 +74,18 @@ function parseSectionsFromEnv(): { prefix: string; slug: string; label: string }
 		.split(",")
 		.map((s: string) => s.trim())
 		.filter(Boolean)
-		.map((section: string) => {
-			const parts = section.split("/");
-			if (parts.length < 3) {
-				throw new Error(
-					`Invalid section format: "${section}". ` +
-						`Expected format: "prefix/slug/label". ` +
-						`Raw SECTIONS value: "${envSections}"`,
-				);
-			}
-			const prefix = parts[0];
-			const slug = parts[1];
-			const label = parts.slice(2).join("/");
-
-			if (!prefix || !slug || !label) {
-				throw new Error(
-					`Invalid section format: "${section}". ` +
-						`Expected format: "prefix/slug/label"`,
-				);
-			}
-			return {
-				prefix: prefix + "/",
-				slug,
-				label,
-			};
-		});
+		.map((section: string) => sectionFromPrefix(section));
 }
 
 export const getSections = async (): Promise<{ prefix: string; slug: string; label: string }[]> => {
-	// Try S3 config first
 	try {
 		const config = await fetchConfig();
-		if (config?.sections?.length) {
-			return config.sections;
-		}
+		const sections = sectionsFromConfig(config);
+		if (sections) return sections;
 	} catch {
-		// Ignore fetch errors, fall back to env
+		// Ignore fetch errors
 	}
-
-	// Fall back to env and persist to S3
-	const sections = parseSectionsFromEnv();
-	putConfig({ sections }).catch(() => {});
-	return sections;
+	return [];
 };
 
 // Cache for sections after first load
@@ -285,6 +272,50 @@ export async function listSection(prefix: string): Promise<S3Entry[]> {
 
 	listCache.set(prefix, { data: entries, pins, ts: Date.now() });
 	return entries;
+}
+
+/**
+ * List top-level folders under a prefix (uses delimiter, does not use cache).
+ */
+export async function listSectionFolders(prefix: string): Promise<{ folder: string; count: number }[]> {
+	const folders = new Map<string, number>();
+	let continuationToken: string | null = null;
+
+	do {
+		const paramParts = [`list-type=2`, `prefix=${encodeURIComponent(prefix)}`, `delimiter=/`];
+		if (continuationToken) {
+			paramParts.push(`continuation-token=${encodeURIComponent(continuationToken)}`);
+		}
+
+		const url = `${ENDPOINT}/${BUCKET}?${paramParts.join("&")}`;
+		const res = await s3.fetch(url);
+
+		if (!res.ok) {
+			throw new Error(`S3 ListObjectsV2 failed: ${res.status} ${await res.text()}`);
+		}
+
+		const xml = await res.text();
+
+		// Extract CommonPrefixes (folder entries)
+		const prefixRegex = /<CommonPrefixes>([\s\S]*?)<\/CommonPrefixes>/g;
+		let match;
+		while ((match = prefixRegex.exec(xml)) !== null) {
+			const keyMatch = match[1]!.match(/<Prefix>(.*?)<\/Prefix>/);
+			if (keyMatch) {
+				const folderPath = decodeXmlEntities(keyMatch[1]!);
+				const rel = folderPath.slice(prefix.length);
+				const parts = rel.split("/").filter(Boolean);
+				if (parts.length > 0) {
+					folders.set(parts[0]!, (folders.get(parts[0]!) ?? 0) + 1);
+				}
+			}
+		}
+
+		const tokenMatch = xml.match(/<NextContinuationToken>(.*?)<\/NextContinuationToken>/);
+		continuationToken = tokenMatch ? decodeXmlEntities(tokenMatch[1]!) : null;
+	} while (continuationToken);
+
+	return Array.from(folders.entries()).map(([folder, count]) => ({ folder, count }));
 }
 
 /**
