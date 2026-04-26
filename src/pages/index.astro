@@ -71,9 +71,21 @@ const [counts, pinned, activeTasks] = await Promise.all([
 		{TASKS_ENABLED && <TaskList tasks={activeTasks} scrollable />}
 
 		<div class="mt-10">
-			<h2 class="mb-3 text-sm font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
-				Sections
-			</h2>
+			<div class="mb-3 flex items-center gap-2">
+				<h2 class="text-sm font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+					Sections
+				</h2>
+				<button
+					id="edit-sections-btn"
+					class="text-black/30 hover:text-black dark:text-white/30 dark:hover:text-white transition-colors"
+					title="Edit sections"
+					type="button"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+					</svg>
+				</button>
+			</div>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				{counts.map((s, i) => (
 					<a
@@ -98,5 +110,94 @@ const [counts, pinned, activeTasks] = await Promise.all([
 
 <script>
 	import { initPinnedUnpin } from "../lib/pin-toggle";
+
 	initPinnedUnpin();
+
+	const editBtn = document.getElementById('edit-sections-btn');
+	const modal = document.getElementById('sections-modal');
+	const modalOverlay = document.getElementById('sections-modal-overlay');
+	const modalCancel = document.getElementById('sections-modal-cancel');
+	const modalOk = document.getElementById('sections-modal-ok');
+	const foldersList = document.getElementById('folders-list');
+
+	modalOverlay?.addEventListener('click', () => modal?.classList.add('hidden'));
+	modalCancel?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+	modalOk?.addEventListener('click', async () => {
+		modalOk.setAttribute('disabled', 'true');
+		modalOk.textContent = 'Saving...';
+		const checked = Array.from(document.querySelectorAll('.folder-check:checked')).map(el => el.getAttribute('data-folder')!);
+		await fetch('/api/config', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ sections: checked }),
+		});
+		window.location.reload();
+	});
+
+	editBtn?.addEventListener('click', async () => {
+		editBtn.setAttribute('disabled', 'true');
+		try {
+			const [configRes, foldersRes] = await Promise.all([
+				fetch('/api/config'),
+				fetch('/api/section-folders'),
+			]);
+
+			if (editBtn) editBtn.removeAttribute('disabled');
+			if (!foldersRes.ok) throw new Error('Failed to load folders');
+
+			const folders: string[] = await foldersRes.json();
+			let existing: string[] = [];
+			if (configRes.ok) {
+				const config = await configRes.json();
+				if (config?.sections?.length) {
+					existing = config.sections;
+				}
+			}
+
+			const existingSet = new Set(existing.map((s: string) => s.toLowerCase()));
+			folders.sort((a, b) => {
+				const aEnabled = existingSet.has(a.toLowerCase());
+				const bEnabled = existingSet.has(b.toLowerCase());
+				if (aEnabled && !bEnabled) return -1;
+				if (!aEnabled && bEnabled) return 1;
+				return a.localeCompare(b);
+			});
+
+			if (!foldersList) return;
+			foldersList.innerHTML = '';
+			for (const folder of folders) {
+				const id = `folder-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+				const checked = existingSet.has(folder.toLowerCase());
+				const item = document.createElement('div');
+				item.className = 'flex items-center gap-2 py-1';
+				item.innerHTML = `
+					<input type="checkbox" class="folder-check" data-folder="${folder}" id="${id}" ${checked ? 'checked' : ''} />
+					<label for="${id}" class="text-sm cursor-pointer text-black dark:text-white">${folder}</label>
+				`;
+				foldersList.appendChild(item);
+			}
+
+			modal?.classList.remove('hidden');
+		} catch (err) {
+			console.error(err);
+			if (editBtn) editBtn.removeAttribute('disabled');
+		}
+	});
 </script>
+
+<div id="sections-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+	<div id="sections-modal-overlay" class="absolute inset-0 bg-black/30 dark:bg-white/10"></div>
+	<div class="relative z-10 w-full max-w-sm rounded-sm border border-black/20 dark:border-white/20 bg-white dark:bg-neutral-900 p-4 shadow-lg">
+		<h3 class="mb-4 text-base font-semibold text-black dark:text-white">Edit Sections</h3>
+		<div id="folders-list" class="mb-4 max-h-64 overflow-y-auto space-y-1"></div>
+		<div class="flex justify-end gap-2">
+			<button id="sections-modal-cancel" type="button" class="rounded-sm border border-black/20 px-3 py-1.5 text-sm text-black/60 hover:bg-black/5 dark:border-white/20 dark:text-white/60 dark:hover:bg-white/5">
+				Cancel
+			</button>
+			<button id="sections-modal-ok" type="button" class="rounded-sm border border-black/20 bg-black px-3 py-1.5 text-sm text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80">
+				OK
+			</button>
+		</div>
+	</div>
+</div>
