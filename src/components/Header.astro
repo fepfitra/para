@@ -1,6 +1,6 @@
 ---
 import Container from "./Container.astro";
-import { SECTIONS } from "../lib/s3";
+import { loadSections } from "../lib/s3";
 
 type Props = {
   containerSize?: "sm" | "md" | "lg" | "xl" | "2xl";
@@ -8,6 +8,7 @@ type Props = {
 
 const { containerSize = "sm" } = Astro.props;
 const pathname = Astro.url.pathname;
+const SECTIONS = await loadSections();
 ---
 
 <header>

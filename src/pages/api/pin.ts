@@ -1,5 +1,4 @@
-import type { APIRoute } from "astro";
-import { SECTIONS, putPin, deletePin } from "../../lib/s3";
+import { loadSections, putPin, deletePin } from "../../lib/s3";
 
 /**
  * POST /api/pin — create a .pin file to pin a folder
@@ -19,6 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
 			);
 		}
 
+		const SECTIONS = await loadSections();
 		const sectionMeta = SECTIONS.find((s) => s.slug === section);
 		if (!sectionMeta) {
 			return new Response(
@@ -53,6 +53,7 @@ export const DELETE: APIRoute = async ({ request }) => {
 			);
 		}
 
+		const SECTIONS = await loadSections();
 		const sectionMeta = SECTIONS.find((s) => s.slug === section);
 		if (!sectionMeta) {
 			return new Response(

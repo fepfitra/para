@@ -4,7 +4,7 @@ import Sidebar from "../../components/Sidebar.astro";
 import TableOfContents from "../../components/TableOfContents.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import {
-	SECTIONS,
+	loadSections,
 	listSection,
 	buildTree,
 	fetchMarkdown,
@@ -13,6 +13,7 @@ import {
 } from "../../lib/s3";
 import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
 
+const SECTIONS = await loadSections();
 const { section, slug } = Astro.params;
 const pageSlug = Array.isArray(slug) ? slug.join("/") : slug;
 

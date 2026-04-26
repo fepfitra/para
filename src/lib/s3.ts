@@ -11,12 +11,39 @@ const s3 = new AwsClient({
 
 const ENDPOINT = import.meta.env.S3_ENDPOINT || "https://s3.g.s4.mega.io";
 const BUCKET = import.meta.env.S3_BUCKET || "obsidian";
+const CONFIG_KEY = "para.json";
 
-// Parse sections from env (required)
-// Format: "prefix/slug/label,prefix/slug/label"
-// Example: "Projects/projects/Projects,Areas/areas/Areas"
-export const getSections = (): { prefix: string; slug: string; label: string }[] => {
-	// Try import.meta.env first (Vite/Astro), then process.env (Node/Bun)
+export interface ParaConfig {
+	sections: { prefix: string; slug: string; label: string }[];
+}
+
+async function fetchConfig(): Promise<ParaConfig | null> {
+	const encodedKey = CONFIG_KEY.split("/").map((s) => encodeURIComponent(s)).join("/");
+	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
+	const res = await s3.fetch(url);
+	if (!res.ok) {
+		if (res.status === 404) return null;
+		throw new Error(`Failed to fetch ${CONFIG_KEY}: ${res.status} ${await res.text()}`);
+	}
+	const text = await res.text();
+	return JSON.parse(text) as ParaConfig;
+}
+
+async function putConfig(config: ParaConfig): Promise<void> {
+	const encodedKey = CONFIG_KEY.split("/").map((s) => encodeURIComponent(s)).join("/");
+	const url = `${ENDPOINT}/${BUCKET}/${encodedKey}`;
+	const body = JSON.stringify(config, null, 2);
+	const res = await s3.fetch(url, {
+		method: "PUT",
+		body,
+		headers: { "Content-Type": "application/json" },
+	});
+	if (!res.ok) {
+		throw new Error(`Failed to save ${CONFIG_KEY}: ${res.status} ${await res.text()}`);
+	}
+}
+
+function parseSectionsFromEnv(): { prefix: string; slug: string; label: string }[] {
 	const envSections = import.meta.env?.SECTIONS || process?.env?.SECTIONS;
 	if (!envSections) {
 		throw new Error(
@@ -26,9 +53,9 @@ export const getSections = (): { prefix: string; slug: string; label: string }[]
 		);
 	}
 
-	const sections = envSections
+	return envSections
 		.split(",")
-		.map((s) => s.trim())
+		.map((s: string) => s.trim())
 		.filter(Boolean)
 		.map((section: string) => {
 			const parts = section.split("/");
@@ -55,27 +82,50 @@ export const getSections = (): { prefix: string; slug: string; label: string }[]
 				label,
 			};
 		});
+}
 
-	if (sections.length === 0) {
-		throw new Error("SECTIONS must contain at least one section");
+export const getSections = async (): Promise<{ prefix: string; slug: string; label: string }[]> => {
+	// Try S3 config first
+	try {
+		const config = await fetchConfig();
+		if (config?.sections?.length) {
+			return config.sections;
+		}
+	} catch {
+		// Ignore fetch errors, fall back to env
 	}
 
+	// Fall back to env and persist to S3
+	const sections = parseSectionsFromEnv();
+	putConfig({ sections }).catch(() => {});
 	return sections;
 };
 
-// Cache for sections after first access
+// Cache for sections after first load
 let _sectionsCache: { prefix: string; slug: string; label: string }[] | null = null;
+let _sectionsPromise: Promise<{ prefix: string; slug: string; label: string }[]> | null = null;
 
+export async function loadSections(): Promise<{ prefix: string; slug: string; label: string }[]> {
+	if (_sectionsCache) return _sectionsCache;
+	if (!_sectionsPromise) {
+		_sectionsPromise = getSections().then((s) => {
+			_sectionsCache = s;
+			return s;
+		});
+	}
+	return _sectionsPromise;
+}
+
+// Sync fallback — only works after first load
 export const SECTIONS: { prefix: string; slug: string; label: string }[] = new Proxy(
 	[] as { prefix: string; slug: string; label: string }[],
 	{
-		get(target, prop) {
-			if (_sectionsCache === null) {
-				_sectionsCache = getSections();
+		get(_target, prop) {
+			if (!_sectionsCache) {
+				throw new Error("SECTIONS accessed before loadSections() was called. Use await loadSections() first.");
 			}
 			const value = _sectionsCache[prop as keyof typeof _sectionsCache];
-			// Handle array methods like find, map, etc.
-			if (typeof value === 'function') {
+			if (typeof value === "function") {
 				return value.bind(_sectionsCache);
 			}
 			return value;
@@ -350,13 +400,14 @@ export interface PinnedFolder {
 export async function getPinnedFolders(
 	sectionSlug?: string,
 ): Promise<PinnedFolder[]> {
-	const sections = sectionSlug
-		? SECTIONS.filter((s) => s.slug === sectionSlug)
-		: SECTIONS;
+	const sections = await loadSections();
+	const targetSections = sectionSlug
+		? sections.filter((s) => s.slug === sectionSlug)
+		: sections;
 
 	const results: PinnedFolder[] = [];
 
-	for (const section of sections) {
+	for (const section of targetSections) {
 		// Ensure listing is cached
 		await listSection(section.prefix);
 		const cached = listCache.get(section.prefix);
@@ -406,13 +457,14 @@ export async function resolveKey(
 	sectionSlug: string,
 	pageSlug: string,
 ): Promise<{ key: string; title: string } | null> {
-	const section = SECTIONS.find((s) => s.slug === sectionSlug);
+	const sections = await loadSections();
+	const section = sections.find((s) => s.slug === sectionSlug);
 	if (!section) {
 		throw new Error(
 			`Section "${sectionSlug}" is not defined. ` +
-				`Available sections: ${SECTIONS.map((s) => s.slug).join(", ")}. ` +
+				`Available sections: ${sections.map((s) => s.slug).join(", ")}. ` +
 				`Check your SECTIONS env variable.`,
-			);
+		);
 	}
 
 	const entries = await listSection(section.prefix);

@@ -4,13 +4,14 @@ import Container from "../../components/Container.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import SidebarItem from "../../components/SidebarItem.astro";
 import {
-	SECTIONS,
+	loadSections,
 	listSection,
 	buildTree,
 	getPinnedFolders,
 	getPinnedPaths,
 } from "../../lib/s3";
 
+const SECTIONS = await loadSections();
 const { section } = Astro.params;
 const sectionMeta = SECTIONS.find((s) => s.slug === section);
 
