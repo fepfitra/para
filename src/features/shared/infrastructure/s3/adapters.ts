@@ -86,6 +86,23 @@ function parseListResponse(xml: string): {
 }
 
 const listCache = new Map<string, { data: Note[]; pins: Set<string>; ts: number }>();
+const MAX_CACHE_SIZE = 20;
+
+function cleanCache(): void {
+	if (listCache.size <= MAX_CACHE_SIZE) return;
+	const cutoff = Date.now() - CACHE_TTL;
+	for (const [key, val] of listCache) {
+		if (val.ts < cutoff) listCache.delete(key);
+	}
+	if (listCache.size > MAX_CACHE_SIZE) {
+		const oldestKeys = Array.from(listCache.entries())
+			.sort((a, b) => a[1].ts - b[1].ts)
+			.slice(0, listCache.size - MAX_CACHE_SIZE)
+			.map(([key]) => key);
+		oldestKeys.forEach((key) => listCache.delete(key));
+	}
+}
+
 let _sectionsPromise: Promise<{ prefix: string; slug: string; label: string }[]> | null = null;
 let _sectionsCache: { prefix: string; slug: string; label: string }[] | null = null;
 
@@ -164,6 +181,7 @@ export class S3StorageAdapter implements StoragePort {
 		} while (continuationToken);
 
 		listCache.set(prefix, { data: entries, pins, ts: Date.now() });
+		cleanCache();
 		return entries;
 	}
 
