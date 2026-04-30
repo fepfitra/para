@@ -1,0 +1,114 @@
+---
+import { loadSections, listSection, buildTree, getPinnedFolders, getPinnedPaths } from "../lib/s3";
+import SidebarItem from "./SidebarItem.astro";
+
+const SECTIONS = await loadSections();
+const pathname = Astro.url.pathname;
+
+const sectionsData = await Promise.all(
+	SECTIONS.map(async (section) => {
+		const entries = await listSection(section.prefix);
+		const tree = buildTree(entries, section.slug);
+		const pinned = await getPinnedFolders(section.slug);
+		const pinnedPathsSet = getPinnedPaths(section.prefix);
+		return {
+			...section,
+			tree,
+			pinned,
+			pinnedPathsSet,
+		};
+	})
+);
+
+const currentSectionSlug = SECTIONS.find((s) => pathname.startsWith(`/${s.slug}`))?.slug || "";
+---
+
+<aside id="section-tree-sidebar" class="fixed left-16 top-0 z-30 hidden h-full w-64 flex-col border-r border-black/10 bg-white/80 py-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/80 sm:left-20 overflow-hidden">
+	{sectionsData.map((section) => (
+		<div
+			class="section-content hidden h-full flex-col overflow-hidden"
+			data-section={section.slug}
+		>
+			<div class="mb-4 px-4 text-base font-semibold text-black/80 dark:text-white/80">
+				{section.label}
+			</div>
+
+			<div class="flex-1 overflow-y-auto overflow-x-hidden px-2">
+				{section.pinned.length > 0 && (
+					<div class="mb-3">
+						<div class="mb-1.5 px-2 text-xs font-medium uppercase tracking-wider text-black/40 dark:text-white/40">
+							Pinned
+						</div>
+						<ul class="space-y-0.5">
+							{section.pinned.map((p: any) => (
+								<li data-pinned-folder={p.folderPath} class="group/pin flex items-center">
+									<a
+										href={p.href}
+										class="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-black/70 transition-colors hover:bg-black/5 hover:text-black dark:text-white/70 dark:hover:bg-white/5 dark:hover:text-white no-underline min-w-0"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-black/30 dark:text-white/30">
+											<path d="M12 17v5" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+										</svg>
+										<span class="truncate">{p.label}</span>
+										<span class="ml-auto text-xs text-black/30 dark:text-white/30">{p.noteCount}</span>
+									</a>
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
+
+				{section.pinned.length > 0 && <div class="mb-3 border-b border-black/10 dark:border-white/10"></div>}
+
+				<nav class="space-y-0.5">
+					{section.tree.map((node: any) => (
+						<SidebarItem
+							node={node}
+							currentPath={pathname}
+							depth={0}
+							sectionSlug={section.slug}
+							pinnedPaths={section.pinnedPathsSet}
+						/>
+					))}
+				</nav>
+			</div>
+		</div>
+	))}
+</aside>
+
+<script>
+	import { initPinToggle, initPinnedUnpin } from "../lib/pin-toggle";
+	initPinToggle();
+	initPinnedUnpin();
+
+	const sectionNav = document.getElementById("section-nav");
+	const sectionTreeSidebar = document.getElementById("section-tree-sidebar");
+	const allSectionContents = sectionTreeSidebar?.querySelectorAll(".section-content");
+
+	let currentSection = "";
+
+	sectionNav?.querySelectorAll("[data-section]").forEach((item) => {
+		item.addEventListener("mouseenter", () => {
+			const sectionSlug = item.getAttribute("data-section");
+			if (!sectionSlug || sectionSlug === currentSection) return;
+
+			currentSection = sectionSlug;
+			sectionTreeSidebar?.classList.remove("hidden");
+
+			allSectionContents?.forEach((content) => {
+				if (content.getAttribute("data-section") === sectionSlug) {
+					content.classList.remove("hidden");
+					content.classList.add("flex");
+				} else {
+					content.classList.add("hidden");
+					content.classList.remove("flex");
+				}
+			});
+		});
+	});
+
+	sectionTreeSidebar?.addEventListener("mouseleave", () => {
+		sectionTreeSidebar?.classList.add("hidden");
+		currentSection = "";
+	});
+</script>

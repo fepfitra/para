@@ -1,7 +1,7 @@
 ---
 import Head from "../components/Head.astro";
-import Header from "../components/Header.astro";
 import VerticalSidebar from "../components/VerticalSidebar.astro";
+import SectionTreeSidebar from "../components/SectionTreeSidebar.astro";
 import SearchDialog from "../components/SearchDialog.astro";
 
 interface Props {
@@ -24,12 +24,11 @@ const { title, description, width = "2xl" } = Astro.props;
     </a>
     
     <VerticalSidebar />
-
-    <Header containerSize={width} showSectionsOnMobile={true} />
+    <SectionTreeSidebar />
     
     <SearchDialog />
 
-    <main id="main-content" class="pl-16 sm:pl-20">
+    <main id="main-content" class="pl-16 sm:pl-20 px-4">
       <slot />
     </main>
   </body>

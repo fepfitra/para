@@ -1,6 +1,7 @@
 ---
 import Head from "../components/Head.astro";
 import VerticalSidebar from "../components/VerticalSidebar.astro";
+import SectionTreeSidebar from "../components/SectionTreeSidebar.astro";
 import SearchDialog from "../components/SearchDialog.astro";
 
 interface Props {
@@ -23,6 +24,7 @@ const { title, description, width = "sm" } = Astro.props;
     </a>
     
     <VerticalSidebar />
+    <SectionTreeSidebar />
 
     <SearchDialog />
 

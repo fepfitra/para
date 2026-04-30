@@ -1,15 +1,12 @@
 ---
 import DocLayout from "../../layouts/DocLayout.astro";
-import Sidebar from "../../components/Sidebar.astro";
+import Container from "../../components/Container.astro";
 import TableOfContents from "../../components/TableOfContents.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import {
 	loadSections,
 	listSection,
-	buildTree,
 	fetchMarkdown,
-	getPinnedFolders,
-	getPinnedPaths,
 } from "../../lib/s3";
 import { renderMarkdownWithContext, extractTitle, extractToc, stripFrontmatter } from "../../lib/markdown";
 
@@ -34,38 +31,16 @@ const body = stripFrontmatter(raw);
 const rawHtml = await renderMarkdownWithContext(raw, entry.key);
 const { html: htmlContent, toc } = extractToc(rawHtml);
 const title = extractTitle(body) || entry.title;
-// Remove the first h1 from content since we render it manually
 const htmlContentWithoutH1 = htmlContent.replace(/<h1[^>]*>.*?<\/h1>/i, "");
-const tree = buildTree(entries, sectionMeta.slug);
-const pinned = await getPinnedFolders(sectionMeta.slug);
-const pinnedPathsSet = getPinnedPaths(sectionMeta.prefix);
 
-// Current page path for highlighting in sidebar
-const currentPath = `/${sectionMeta.slug}/${entry.slug}`;
-
-// Breadcrumb segments
 const crumbs = entry.segments.slice(0, -1);
 ---
 
 <DocLayout title={title} description={`${title} — ${sectionMeta.label}`}>
-  <div class="flex flex-col gap-8 lg:flex-row" id="page-layout">
-    <!-- Left sidebar -->
-    <div class="sidebar-wrapper w-full lg:w-64 lg:shrink-0 transition-all duration-300" id="sidebar-wrapper">
-      <div class="lg:sticky lg:top-32 lg:max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
-				<Sidebar
-					nodes={tree}
-					currentPath={currentPath}
-					sectionLabel={sectionMeta.label}
-					sectionSlug={sectionMeta.slug}
-					pinnedFolders={pinned}
-					pinnedPaths={pinnedPathsSet}
-				/>
-			</div>
-		</div>
-
-		<!-- Center: main content -->
+	<div class="flex flex-col gap-8 lg:flex-row" id="page-layout">
 		<div class="min-w-0 flex-1">
-			<article class="prose dark:prose-invert max-w-none" data-pagefind-body>
+			<Container size="xl">
+			<article class="prose dark:prose-invert mx-auto" data-pagefind-body>
 				<div class="animate mb-10">
 					<BackToPrevious href={`/${sectionMeta.slug}`}>
 						Back to {sectionMeta.label}
@@ -99,7 +74,7 @@ const crumbs = entry.segments.slice(0, -1);
 						class="shrink-0 cursor-pointer rounded-md border border-black/10 px-2 py-1 text-xs font-medium text-black/50 transition-colors hover:border-black/20 hover:text-black/70 dark:border-white/10 dark:text-white/50 dark:hover:border-white/20 dark:hover:text-white/70 not-prose"
 						type="button"
 						data-raw={body}
->
+					>
 						📋 Copy
 					</button>
 				</div>
@@ -107,9 +82,9 @@ const crumbs = entry.segments.slice(0, -1);
 
 				<div class="animate mt-8" set:html={htmlContentWithoutH1} />
 			</article>
+			</Container>
 		</div>
 
-		<!-- Right sidebar: TOC -->
 		{toc.length > 0 && (
 			<aside class="hidden w-64 shrink-0 lg:block">
 				<div class="sticky top-32 max-h-[calc(100vh-12rem)] overflow-y-auto">
@@ -120,38 +95,7 @@ const crumbs = entry.segments.slice(0, -1);
 	</div>
 </DocLayout>
 
-<style>
-	@media (min-width: 1024px) {
-		.sidebar-wrapper.collapsed {
-			width: auto;
-			min-width: 0;
-			flex-shrink: 0;
-		}
-		.sidebar-wrapper.collapsed :global(aside) {
-			padding-right: 0;
-			border-right: none;
-		}
-	}
-</style>
-
 <script>
-	// Handle sidebar collapse on desktop
-	const sidebarWrapper = document.getElementById('sidebar-wrapper');
-	const sidebarToggle = document.getElementById('sidebar-toggle');
-	const sidebarContent = document.getElementById('sidebar-content');
-
-	if (sidebarWrapper && sidebarToggle && sidebarContent) {
-		sidebarToggle.addEventListener('click', () => {
-			const isHidden = sidebarContent.classList.contains('force-hidden');
-			if (isHidden) {
-				sidebarWrapper.classList.add('collapsed');
-			} else {
-				sidebarWrapper.classList.remove('collapsed');
-			}
-		});
-	}
-
-	// Copy markdown button
 	const copyBtn = document.getElementById('copy-md-btn');
 	if (copyBtn) {
 		copyBtn.addEventListener('click', async () => {
