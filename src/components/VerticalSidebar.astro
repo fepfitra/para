@@ -152,25 +152,68 @@ const isActive = (slug: string) => pathname.startsWith(`/${slug}`);
 	const sectionNav = document.getElementById("section-nav");
 	const sectionTreeSidebar = document.getElementById("section-tree-sidebar");
 
+	function showSidebar() {
+		if (!sectionTreeSidebar) return;
+		sectionTreeSidebar.classList.remove("hidden");
+		requestAnimationFrame(() => {
+			sectionTreeSidebar.classList.remove("opacity-0", "-translate-x-4");
+		});
+	}
+
+	function hideSidebar() {
+		if (!sectionTreeSidebar) return;
+		sectionTreeSidebar.classList.add("opacity-0", "-translate-x-4");
+		setTimeout(() => {
+			if (sectionTreeSidebar?.classList.contains("opacity-0")) {
+				sectionTreeSidebar.classList.add("hidden");
+			}
+		}, 200);
+	}
+
 	let showTimeout: number | null = null;
+	let isMobileMenuOpen = false;
 
 	sectionNav?.querySelectorAll("[data-section]").forEach((item) => {
 		item.addEventListener("mouseenter", () => {
-			if (showTimeout) clearTimeout(showTimeout);
-			showTimeout = window.setTimeout(() => {
-				sectionTreeSidebar?.classList.remove("hidden");
-			}, 150);
+			if (window.matchMedia("(pointer: fine)").matches) {
+				if (showTimeout) clearTimeout(showTimeout);
+				showTimeout = window.setTimeout(() => {
+					showSidebar();
+				}, 150);
+			}
 		});
 		item.addEventListener("mouseleave", () => {
-			if (showTimeout) {
-				clearTimeout(showTimeout);
-				showTimeout = null;
+			if (window.matchMedia("(pointer: fine)").matches) {
+				if (showTimeout) {
+					clearTimeout(showTimeout);
+					showTimeout = null;
+				}
+			}
+		});
+		item.addEventListener("click", () => {
+			if (!window.matchMedia("(pointer: fine)").matches || isMobileMenuOpen) {
+				if (isMobileMenuOpen) {
+					hideSidebar();
+					isMobileMenuOpen = false;
+				} else {
+					showSidebar();
+					isMobileMenuOpen = true;
+				}
 			}
 		});
 	});
 
 	sectionTreeSidebar?.addEventListener("mouseleave", () => {
-		sectionTreeSidebar?.classList.add("hidden");
+		if (window.matchMedia("(pointer: fine)").matches) {
+			hideSidebar();
+		}
+	});
+
+	document.addEventListener("click", (e) => {
+		if (isMobileMenuOpen && sectionTreeSidebar && !sectionNav?.contains(e.target as Node) && !sectionTreeSidebar.contains(e.target as Node)) {
+			hideSidebar();
+			isMobileMenuOpen = false;
+		}
 	});
 
 	document.getElementById("light-theme-button")?.addEventListener("click", () => {

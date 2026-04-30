@@ -23,7 +23,7 @@ const sectionsData = await Promise.all(
 const currentSectionSlug = SECTIONS.find((s) => pathname.startsWith(`/${s.slug}`))?.slug || "";
 ---
 
-<aside id="section-tree-sidebar" class="fixed left-16 top-0 z-30 hidden h-full w-64 flex-col border-r border-black/10 bg-white/80 py-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/80 sm:left-20 overflow-hidden">
+<aside id="section-tree-sidebar" class="fixed left-16 top-0 z-30 hidden h-full w-64 flex-col border-r border-black/10 bg-white/80 py-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/80 sm:left-20 overflow-hidden transition-all duration-200 opacity-0 -translate-x-4">
 	{sectionsData.map((section) => (
 		<div
 			class="section-content hidden h-full flex-col overflow-hidden"
