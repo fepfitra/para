@@ -1,0 +1,1 @@
+export { GET } from "./controllers/section-folders";

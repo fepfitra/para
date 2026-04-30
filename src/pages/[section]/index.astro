@@ -3,26 +3,33 @@ import Layout from "../../layouts/Layout.astro";
 import Container from "../../components/Container.astro";
 import BackToPrevious from "../../components/BackToPrevious.astro";
 import SidebarItem from "../../components/SidebarItem.astro";
-import {
-	loadSections,
-	listSection,
-	buildTree,
-	getPinnedFolders,
-	getPinnedPaths,
-} from "../../lib/s3";
+import { S3StorageAdapter, SectionServiceAdapter } from "../../features/shared/infrastructure/s3/adapters";
+import { ListSectionNotes, GetSections, BuildSidebarTree } from "../../features/sections/application/useCases";
+import { GetPinnedFolders, GetPinnedPaths } from "../../features/pin/application/useCases";
 
-const SECTIONS = await loadSections();
+const storage = new S3StorageAdapter();
+const sectionService = new SectionServiceAdapter();
+
+const sectionsUseCase = new GetSections(sectionService);
+const sections = await sectionsUseCase.execute();
 const { section } = Astro.params;
-const sectionMeta = SECTIONS.find((s) => s.slug === section);
+const sectionMeta = sections.find((s) => s.slug === section);
 
 if (!sectionMeta) {
 	return Astro.redirect("/");
 }
 
-const entries = await listSection(sectionMeta.prefix);
-const tree = buildTree(entries, sectionMeta.slug);
-const pinned = await getPinnedFolders(sectionMeta.slug);
-const pinnedPathsSet = getPinnedPaths(sectionMeta.prefix);
+const listNotesUseCase = new ListSectionNotes(storage);
+const entries = await listNotesUseCase.execute(sectionMeta.prefix);
+
+const treeUseCase = new BuildSidebarTree(sectionService);
+const tree = treeUseCase.execute(entries, sectionMeta.slug);
+
+const pinnedUseCase = new GetPinnedFolders(storage, sectionService);
+const pinned = await pinnedUseCase.execute(sectionMeta.slug);
+
+const pinnedPathsUseCase = new GetPinnedPaths(sectionService);
+const pinnedPathsSet = pinnedPathsUseCase.execute(sectionMeta.prefix);
 ---
 
 <Layout title={sectionMeta.label} description={`${sectionMeta.label} — ${entries.length} notes`} width="lg">

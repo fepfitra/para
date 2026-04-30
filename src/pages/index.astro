@@ -2,18 +2,26 @@
 import Layout from "../layouts/Layout.astro";
 import Container from "../components/Container.astro";
 import TaskList from "../components/TaskList.astro";
-import { loadSections, listSection, getPinnedFolders } from "../lib/s3";
+import { S3StorageAdapter, SectionServiceAdapter } from "../features/shared/infrastructure/s3/adapters";
+import { ListSectionNotes, GetSections } from "../features/sections/application/useCases";
+import { GetPinnedFolders } from "../features/pin/application/useCases";
 import { getActiveTasks, TASKS_ENABLED } from "../lib/tasks";
 
-const SECTIONS = await loadSections();
+const storage = new S3StorageAdapter();
+const sectionService = new SectionServiceAdapter();
+
+const sectionsUseCase = new GetSections(sectionService);
+const sections = await sectionsUseCase.execute();
+
 const [counts, pinned, activeTasks] = await Promise.all([
 	Promise.all(
-		SECTIONS.map(async (s) => {
-			const entries = await listSection(s.prefix);
+		sections.map(async (s) => {
+			const listNotes = new ListSectionNotes(storage);
+			const entries = await listNotes.execute(s.prefix);
 			return { ...s, count: entries.length };
 		}),
 	),
-	getPinnedFolders(),
+	new GetPinnedFolders(storage, sectionService).execute(),
 	TASKS_ENABLED ? getActiveTasks() : Promise.resolve([]),
 ]);
 ---
@@ -113,38 +121,38 @@ const [counts, pinned, activeTasks] = await Promise.all([
 
 	initPinnedUnpin();
 
-	const editBtn = document.getElementById('edit-sections-btn');
-	const modal = document.getElementById('sections-modal');
-	const modalOverlay = document.getElementById('sections-modal-overlay');
-	const modalCancel = document.getElementById('sections-modal-cancel');
-	const modalOk = document.getElementById('sections-modal-ok');
-	const foldersList = document.getElementById('folders-list');
+	const editBtn = document.getElementById("edit-sections-btn");
+	const modal = document.getElementById("sections-modal");
+	const modalOverlay = document.getElementById("sections-modal-overlay");
+	const modalCancel = document.getElementById("sections-modal-cancel");
+	const modalOk = document.getElementById("sections-modal-ok");
+	const foldersList = document.getElementById("folders-list");
 
-	modalOverlay?.addEventListener('click', () => modal?.classList.add('hidden'));
-	modalCancel?.addEventListener('click', () => modal?.classList.add('hidden'));
+	modalOverlay?.addEventListener("click", () => modal?.classList.add("hidden"));
+	modalCancel?.addEventListener("click", () => modal?.classList.add("hidden"));
 
-	modalOk?.addEventListener('click', async () => {
-		modalOk.setAttribute('disabled', 'true');
-		modalOk.textContent = 'Saving...';
-		const checked = Array.from(document.querySelectorAll('.folder-check:checked')).map(el => el.getAttribute('data-folder')!);
-		await fetch('/api/config', {
-			method: 'PUT',
-			headers: { 'Content-Type': 'application/json' },
+	modalOk?.addEventListener("click", async () => {
+		modalOk.setAttribute("disabled", "true");
+		modalOk.textContent = "Saving...";
+		const checked = Array.from(document.querySelectorAll(".folder-check:checked")).map(el => el.getAttribute("data-folder")!);
+		await fetch("/api/config", {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ sections: checked }),
 		});
 		window.location.reload();
 	});
 
-	editBtn?.addEventListener('click', async () => {
-		editBtn.setAttribute('disabled', 'true');
+	editBtn?.addEventListener("click", async () => {
+		editBtn.setAttribute("disabled", "true");
 		try {
 			const [configRes, foldersRes] = await Promise.all([
-				fetch('/api/config'),
-				fetch('/api/section-folders'),
+				fetch("/api/config"),
+				fetch("/api/section-folders"),
 			]);
 
-			if (editBtn) editBtn.removeAttribute('disabled');
-			if (!foldersRes.ok) throw new Error('Failed to load folders');
+			if (editBtn) editBtn.removeAttribute("disabled");
+			if (!foldersRes.ok) throw new Error("Failed to load folders");
 
 			const folders: string[] = await foldersRes.json();
 			let existing: string[] = [];
@@ -165,23 +173,23 @@ const [counts, pinned, activeTasks] = await Promise.all([
 			});
 
 			if (!foldersList) return;
-			foldersList.innerHTML = '';
+			foldersList.innerHTML = "";
 			for (const folder of folders) {
-				const id = `folder-${folder.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+				const id = `folder-${folder.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 				const checked = existingSet.has(folder.toLowerCase());
-				const item = document.createElement('div');
-				item.className = 'flex items-center gap-2 py-1';
+				const item = document.createElement("div");
+				item.className = "flex items-center gap-2 py-1";
 				item.innerHTML = `
-					<input type="checkbox" class="folder-check" data-folder="${folder}" id="${id}" ${checked ? 'checked' : ''} />
+					<input type="checkbox" class="folder-check" data-folder="${folder}" id="${id}" ${checked ? "checked" : ""} />
 					<label for="${id}" class="text-sm cursor-pointer text-black dark:text-white">${folder}</label>
 				`;
 				foldersList.appendChild(item);
 			}
 
-			modal?.classList.remove('hidden');
+			modal?.classList.remove("hidden");
 		} catch (err) {
 			console.error(err);
-			if (editBtn) editBtn.removeAttribute('disabled');
+			if (editBtn) editBtn.removeAttribute("disabled");
 		}
 	});
 </script>

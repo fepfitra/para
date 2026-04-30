@@ -4,6 +4,10 @@ A server-side rendered (SSR) web application for browsing and managing a markdow
 
 ## Features
 
+
+sdfsdfdsfasdfsdfsdfsdflskdfsdlkfjdslkfjdsflsdkjfldsjfsdskllkjlkjlkjljjlkjjkljlkjlkjljlkj
+
+
 - **Custom Folder Structure**: Configure any number of top-level sections
 - **Task Management**: View active tasks with urgency-based sorting, dedicated task page with sidebar
 - **Search**: Search note titles and paths (metadata only, not content)
@@ -15,6 +19,9 @@ A server-side rendered (SSR) web application for browsing and managing a markdow
 - **Mobile Responsive**: Works on all device sizes
 
 ## Architecture
+
+
+
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
