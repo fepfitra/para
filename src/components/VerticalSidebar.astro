@@ -1,0 +1,184 @@
+---
+import { loadSections } from "../lib/s3";
+
+const SECTIONS = await loadSections();
+const pathname = Astro.url.pathname;
+
+const sectionColors: Record<string, { bg: string; border: string; text: string }> = {
+	"1-projects": { bg: "bg-teal-500", border: "border-teal-400", text: "text-teal-400" },
+	"2-areas": { bg: "bg-blue-500", border: "border-blue-400", text: "text-blue-400" },
+	"3-resources": { bg: "bg-purple-500", border: "border-purple-400", text: "text-purple-400" },
+	"4-archives": { bg: "bg-orange-500", border: "border-orange-400", text: "text-orange-400" },
+	"5-ideas": { bg: "bg-pink-500", border: "border-pink-400", text: "text-pink-400" },
+};
+
+function getSectionColor(slug: string) {
+	return sectionColors[slug] || { bg: "bg-gray-500", border: "border-gray-400", text: "text-gray-400" };
+}
+
+const isActive = (slug: string) => pathname.startsWith(`/${slug}`);
+---
+
+<aside class="fixed left-0 top-0 z-40 flex h-full w-16 flex-col items-center border-r border-black/10 bg-white/80 py-4 backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/80 sm:w-20">
+	<a href="/" class="mb-4 flex size-10 items-center justify-center text-base font-bold sm:size-12">
+		🧠
+	</a>
+
+	<nav id="section-nav" class="flex flex-1 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden py-2">
+		{SECTIONS.map((section) => {
+			const color = getSectionColor(section.slug);
+			const active = isActive(section.slug);
+			const labelParts = section.label.split(" ");
+			const icon = labelParts.length === 1 ? labelParts[0][0] : labelParts.map((w) => w[0]).join("").slice(0, 2);
+			return (
+				<div
+					data-section={section.slug}
+					class:list={[
+						"group/section cursor-pointer flex size-10 items-center justify-center rounded-lg transition-all duration-200 hover:scale-110 sm:size-12",
+						active
+							? "border-2 border-black dark:border-white"
+							: "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10",
+					]}
+					title={section.label}
+				>
+					<span class:list={["text-sm font-bold sm:text-base", color.text]}>
+						{icon}
+					</span>
+					<span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/section:opacity-100 dark:bg-white/80 dark:text-black">
+						{section.label}
+					</span>
+				</div>
+			);
+		})}
+
+		<button
+			id="edit-sections-btn-sidebar"
+			aria-label="Edit sections"
+			class="flex size-8 items-center justify-center rounded-lg text-black/40 transition-all duration-200 hover:scale-110 hover:bg-black/5 hover:text-black/70 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/70"
+			title="Edit sections"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+			</svg>
+		</button>
+	</nav>
+
+	<div class="flex flex-col items-center gap-2">
+		<button
+			id="search-trigger-sidebar"
+			aria-label="Search"
+			class="flex size-8 items-center justify-center rounded-lg text-black/40 transition-all duration-200 hover:scale-110 hover:bg-black/5 hover:text-black/70 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/70"
+			title="Search (⌘K)"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="11" cy="11" r="8"></circle>
+				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+			</svg>
+		</button>
+
+		<button
+			id="light-theme-button"
+			aria-label="Light theme"
+			class="group flex size-8 items-center justify-center rounded-lg border border-black/15 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="text-black/60 transition-colors duration-300 group-hover:animate-pulse group-hover:stroke-black dark:text-white/60 dark:group-hover:stroke-white"
+			>
+				<circle cx="12" cy="12" r="5"></circle>
+				<line x1="12" y1="1" x2="12" y2="3"></line>
+				<line x1="12" y1="21" x2="12" y2="23"></line>
+				<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+				<line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+				<line x1="1" y1="12" x2="3" y2="12"></line>
+				<line x1="21" y1="12" x2="23" y2="12"></line>
+				<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+				<line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+			</svg>
+		</button>
+		<button
+			id="dark-theme-button"
+			aria-label="Dark theme"
+			class="group flex size-8 items-center justify-center rounded-lg border border-black/15 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/5"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="text-black/60 transition-colors duration-300 group-hover:animate-pulse group-hover:stroke-black dark:text-white/60 dark:group-hover:stroke-white"
+			>
+				<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+			</svg>
+		</button>
+
+		<a
+			href="https://github.com/fepfitra/para"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="flex size-8 items-center justify-center rounded-lg text-black/40 transition-all duration-200 hover:scale-110 hover:bg-black/5 hover:text-black/70 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/70"
+			title="GitHub"
+		>
+			<svg class="size-5" fill="currentColor" viewBox="0 0 24 24">
+				<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+			</svg>
+		</a>
+	</div>
+</aside>
+
+<script>
+	document.getElementById("search-trigger-sidebar")?.addEventListener("click", () => {
+		document.getElementById("search-overlay")?.classList.remove("hidden");
+		document.getElementById("search-input")?.focus();
+	});
+
+	document.getElementById("edit-sections-btn-sidebar")?.addEventListener("click", () => {
+		document.getElementById("edit-sections-btn")?.click();
+	});
+
+	const sectionNav = document.getElementById("section-nav");
+	const sectionTreeSidebar = document.getElementById("section-tree-sidebar");
+
+	let showTimeout: number | null = null;
+
+	sectionNav?.querySelectorAll("[data-section]").forEach((item) => {
+		item.addEventListener("mouseenter", () => {
+			if (showTimeout) clearTimeout(showTimeout);
+			showTimeout = window.setTimeout(() => {
+				sectionTreeSidebar?.classList.remove("hidden");
+			}, 150);
+		});
+		item.addEventListener("mouseleave", () => {
+			if (showTimeout) {
+				clearTimeout(showTimeout);
+				showTimeout = null;
+			}
+		});
+	});
+
+	sectionTreeSidebar?.addEventListener("mouseleave", () => {
+		sectionTreeSidebar?.classList.add("hidden");
+	});
+
+	document.getElementById("light-theme-button")?.addEventListener("click", () => {
+		localStorage.theme = "light";
+		document.documentElement.classList.remove("dark");
+	});
+	document.getElementById("dark-theme-button")?.addEventListener("click", () => {
+		localStorage.theme = "dark";
+		document.documentElement.classList.add("dark");
+	});
+</script>
